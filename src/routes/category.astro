@@ -1,0 +1,158 @@
+---
+export const prerender = false;
+
+import Nav from './_Nav.astro';
+
+const { cat } = Astro.params;
+
+let themeEnabled = true;
+let themeConfig: Record<string, any> = {};
+let basePath = '/stargazer';
+let navLinksConfig: any[] = [];
+
+try {
+  const regRes = await fetch(new URL('/__stargazer/registry.json', Astro.url.origin).href);
+  if (regRes.ok) {
+    const regData = await regRes.json();
+    basePath = regData.config?.base || '/stargazer';
+    if (regData.config?.darkMode === false) {
+      themeEnabled = false;
+    } else if (regData.config?.darkMode && typeof regData.config.darkMode === 'object') {
+      themeConfig = regData.config.darkMode;
+    }
+    navLinksConfig = Array.isArray(regData.config?.navLinks) ? regData.config.navLinks : [];
+    // On category/view-all pages, override highlight link to BACK → observatory
+    navLinksConfig = navLinksConfig.map((link: any) =>
+      link.highlight ? { ...link, label: 'BACK', href: basePath } : link
+    );
+  }
+} catch { }
+
+const catDecoded = cat ? decodeURIComponent(cat) : '';
+const embedBase = `${basePath}/frame-cat/${catDecoded}`;
+const properCatName = catDecoded;
+const catAnchor = properCatName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Category: {properCatName} | Stargazer</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9' stroke='%23DDF160' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+  <style>
+    :root {
+      --sg-body-bg: #0d0d24;
+      --sg-container-bg: #08081a;
+      --sg-scroll-track: #08081a;
+      --sg-scroll-thumb: rgba(221,241,96,0.22);
+      --sg-scroll-thumb-hover: rgba(221,241,96,0.45);
+    }
+    html[data-theme="light"] {
+      --sg-body-bg: #f8f9fa;
+      --sg-container-bg: #ffffff;
+      --sg-scroll-track: #ffffff;
+      --sg-scroll-thumb: rgba(0,0,0,0.15);
+      --sg-scroll-thumb-hover: rgba(0,0,0,0.25);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--sg-body-bg); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--sg-scroll-track); }
+    ::-webkit-scrollbar-thumb { background: var(--sg-scroll-thumb); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--sg-scroll-thumb-hover); }
+    * { scrollbar-width: thin; scrollbar-color: var(--sg-scroll-thumb) var(--sg-scroll-track); }
+
+    .sg-iframe-container {
+      position: fixed; top: var(--sg-nav-height, 52px); left: 0; right: 0; bottom: 0;
+      background: transparent;
+      display: flex; justify-content: center; align-items: flex-start;
+      overflow: auto;
+      z-index: 10;
+    }
+
+    #sg-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: var(--base, transparent);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border-radius: 4px;
+      transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-origin: top center;
+    }
+  </style>
+</head>
+<body class="__sg-page">
+
+  <Nav basePath={basePath} title={properCatName} catLink={`${basePath}#cat-${catAnchor}`} navLinks={navLinksConfig} themeEnabled={themeEnabled}>
+    <div class="sg-btn-group sg-vp-group">
+      <button class="sg-btn sg-vp-btn active" id="sg-vp-full" data-tip="FULL" onclick="setViewport('full')">
+        <svg class="sg-btn-icon" viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M10 22C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14" stroke-width="1.5" stroke-linecap="round"/><path d="M10 2C6.22876 2 4.34315 2 3.17157 3.17157C2.92939 3.41375 2.73727 3.68645 2.58487 4M2 10C2 9.26451 2 8.60074 2.00869 8" stroke-width="1.5" stroke-linecap="round"/><path d="M14 2C17.7712 2 19.6569 2 20.8284 3.17157C22 4.34315 22 6.22876 22 10" stroke-width="1.5" stroke-linecap="round"/><path d="M14 22C17.7712 22 19.6569 22 20.8284 20.8284C21.0706 20.5862 21.2627 20.3136 21.4151 20M22 14C22 14.7355 22 15.3993 21.9913 16" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="sg-vp-label">FULL</span>
+      </button>
+      <div class="sg-sep"></div>
+      <button class="sg-btn sg-vp-btn" id="sg-vp-2560" data-tip="2560px" onclick="setViewport(2560)">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9C3 6.17157 3 4.75736 3.87868 3.87868C4.75736 3 6.17157 3 9 3H15C17.8284 3 19.2426 3 20.1213 3.87868C21 4.75736 21 6.17157 21 9V14C21 15.8856 21 16.8284 20.4142 17.4142C19.8284 18 18.8856 18 17 18H7C5.11438 18 4.17157 18 3.58579 17.4142C3 16.8284 3 15.8856 3 14V9Z" stroke-width="1.5"/><path d="M22 21H2" stroke-width="1.5" stroke-linecap="round"/><path d="M15 15H9" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="sg-vp-label">2560px</span>
+      </button>
+      <button class="sg-btn sg-vp-btn" id="sg-vp-1440" data-tip="1440px" onclick="setViewport(1440)">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.3 3.25H15.7c.9 0 1.648 0 2.243.08.627.084 1.194.27 1.649.726.456.455.641 1.022.725 1.65.08.594.08 1.343.08 2.241V15.232l1.512 1.561c.372.431.704 1.074.75 1.717l.001.004.001.008.001.011.001.014.001.013.001.016.001.014v.008l-.001.01-.001.01-.001.005c0 .011 0 .022.001.034.001.13.001.319-.004.399-.087 1.382-1.189 2.484-2.57 2.571-.088.006-.185.006-.312.006H4.137c-.127 0-.224 0-.311-.006C2.444 21.657 1.343 20.556 1.255 19.173c-.005-.08-.005-.267-.004-.397.001-.013.001-.026.001-.04L1.25 18.726l-.001-.01-.001-.01V18.7l.001-.016.001-.013.001-.014.001-.011.001-.008.001-.004c.046-.643.377-1.286.75-1.717L3.603 15.232V7.948c0-.898 0-1.647.08-2.242.084-.628.27-1.195.725-1.65.455-.456 1.022-.642 1.65-.725C6.652 3.25 7.401 3.25 8.3 3.25zM4.67 16.286l-1.514 1.562c-.228.254-.394.627-.406.878-.001.022-.001.044-.001.066-.001.053-.001.107.001.157.001.037.001.069.002.095.001.02.001.031.001.034.04.628.54 1.13 1.169 1.169.034.002.079.003.24.003H19.839c.161 0 .206-.001.24-.003.628-.04 1.129-.541 1.168-1.169l-.001.004v-.005c.001-.024.001-.056.002-.086.001-.037.001-.077.001-.122 0-.042 0-.084-.001-.122-.012-.249-.178-.622-.406-.876L19.33 16.286H4.67zm14.228-1.5V8c0-.966-.002-1.614-.066-2.096-.062-.461-.17-.659-.3-.79-.13-.13-.328-.237-.79-.3-.483-.065-1.13-.064-2.096-.064H8.353c-.966 0-1.613.001-2.096.065-.462.062-.659.17-.79.3-.13.13-.237.328-.3.79-.064.483-.065 1.13-.065 2.096v6.786H18.898zM8.75 18.5c0-.414.336-.75.75-.75h5c.414 0 .75.336.75.75s-.336.75-.75.75h-5c-.414 0-.75-.336-.75-.75z"/></svg>
+        <span class="sg-vp-label">1440px</span>
+      </button>
+      <button class="sg-btn sg-vp-btn" id="sg-vp-1024" data-tip="1024px" onclick="setViewport(1024)">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 12V11.988M4 19H20C21.1046 19 22 18.1046 22 17V7C22 5.89543 21.1046 5 20 5H4C2.89543 5 2 5.89543 2 7V17C2 18.1046 2.89543 19 4 19Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="sg-vp-label">1024px</span>
+      </button>
+      <button class="sg-btn sg-vp-btn" id="sg-vp-780" data-tip="780px" onclick="setViewport(780)">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 18H12.01M9.2 21H14.8C15.9201 21 16.4802 21 16.908 20.782C17.2843 20.5903 17.5903 20.2843 17.782 19.908C18 19.4802 18 18.9201 18 17.8V6.2C18 5.0799 18 4.51984 17.782 4.09202C17.5903 3.71569 17.2843 3.40973 16.908 3.21799C16.4802 3 15.9201 3 14.8 3H9.2C8.0799 3 7.51984 3 7.09202 3.21799C6.71569 3.40973 6.40973 3.71569 6.21799 4.09202C6 4.51984 6 5.07989 6 6.2V17.8C6 18.9201 6 19.4802 6.21799 19.908C6.40973 20.2843 6.71569 20.5903 7.09202 20.782C7.51984 21 8.07989 21 9.2 21Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="sg-vp-label">780px</span>
+      </button>
+      <button class="sg-btn sg-vp-btn" id="sg-vp-390" data-tip="390px" onclick="setViewport(390)">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="10" height="10" rx="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="sg-vp-label">390px</span>
+      </button>
+      <div class="sg-btn-group sg-zoom-group" id="sg-zoom-group">
+        <svg class="sg-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin: 0 4px; color: rgba(255, 255, 255, 0.4);"><circle cx="12" cy="12" r="1" stroke-width="2"/><path d="M18.2265 11.3805C18.3552 11.634 18.4195 11.7607 18.4195 12C18.4195 12.2393 18.3552 12.366 18.2265 12.6195C17.6001 13.8533 15.812 16.5 12 16.5C8.18799 16.5 6.39992 13.8533 5.77348 12.6195C5.64481 12.366 5.58048 12.2393 5.58048 12C5.58048 11.7607 5.64481 11.634 5.77348 11.3805C6.39992 10.1467 8.18799 7.5 12 7.5C15.812 7.5 17.6001 10.1467 18.2265 11.3805Z" stroke-width="2"/><path d="M17 4H17.2C18.9913 4 19.887 4 20.4435 4.5565C21 5.11299 21 6.00866 21 7.8V8M17 20H17.2C18.9913 20 19.887 20 20.4435 19.4435C21 18.887 21 17.9913 21 16.2V16M7 4H6.8C5.00866 4 4.11299 4 3.5565 4.5565C3 5.11299 3 6.00866 3 7.8V8M7 20H6.8C5.00866 20 4.11299 20 3.5565 19.4435C3 18.887 3 17.9913 3 16.2V16" stroke-width="2" stroke-linecap="round"/></svg>
+        <button class="sg-btn sg-zoom-btn active" id="sg-zoom-100" onclick="setZoom(1)">100%</button>
+        <button class="sg-btn sg-zoom-btn" id="sg-zoom-75" onclick="setZoom(0.75)">75%</button>
+        <button class="sg-btn sg-zoom-btn" id="sg-zoom-50" onclick="setZoom(0.5)">50%</button>
+        <button class="sg-btn sg-zoom-btn" id="sg-zoom-25" onclick="setZoom(0.25)">25%</button>
+      </div>
+    </div>
+
+  </Nav>
+
+  <div class="sg-iframe-container">
+    <iframe id="sg-frame" src={embedBase}></iframe>
+  </div>
+
+  <script is:inline set:html={`window.themeConfig = ${JSON.stringify(themeConfig)}; window.embedBase = "${embedBase}";`}></script>
+  <script is:inline>
+    window.__stargazerDarkMode = window.themeConfig;
+    const embedBase = window.embedBase;
+
+    (function() {
+      try {
+        const allOv = JSON.parse(localStorage.getItem('sg:overrides') || '{}');
+        const catKey = 'category:' + decodeURIComponent(embedBase.split('/').pop() || '').toLowerCase();
+        const globalOv = allOv.global || {};
+        const catOv = (allOv.components || {})[catKey] || {};
+        const layout = catOv.layout !== undefined ? catOv.layout : (globalOv.layout || '');
+        const props = { ...(globalOv.props || {}), ...(catOv.props || {}) };
+        const frame = document.getElementById('sg-frame');
+        if (!frame) return;
+        const url = new URL(embedBase, window.location.origin);
+        if (layout) url.searchParams.set('overrideLayout', layout);
+        if (Object.keys(props).length > 0) {
+          url.searchParams.set('overrideProps', JSON.stringify(props));
+        }
+        frame.src = url.toString();
+      } catch(e) {}
+    })();
+  </script>
+  <script is:inline src="/__stargazer_controls.js?v=2"></script>
+</body>
+</html>

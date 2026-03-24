@@ -1,0 +1,2568 @@
+---
+interface RegistryEntry {
+    slug: string;
+    name: string;
+    description?: string;
+    category: string;
+    hasLayout: boolean;
+    layoutKey?: string;
+}
+function layoutFileName(
+    key: string | undefined,
+    layoutsMap: Record<string, string>,
+    defaultKey?: string,
+): string {
+    if (!key || !layoutsMap[key]) return "";
+    if (key === defaultKey) return "Default Layout";
+    const path = layoutsMap[key];
+    return path.split("/").pop() || path;
+}
+const registryUrl = new URL("/__stargazer/registry.json", Astro.url.origin);
+const res = await fetch(registryUrl.href);
+const data = await res.json();
+const generateStars = (n: number) => {
+    let value = `${Math.floor(Math.random() * 2000)}px ${Math.floor(Math.random() * 2000)}px #FFF`;
+    for (let i = 1; i < n; i++) {
+        value += `, ${Math.floor(Math.random() * 2000)}px ${Math.floor(Math.random() * 2000)}px #FFF`;
+    }
+    return value;
+};
+const shadowsSmall = generateStars(300);
+const shadowsMedium = generateStars(70);
+const shadowsBig = generateStars(30);
+const components: RegistryEntry[] = data.components || [];
+const basePath: string = data.config?.base || "/stargazer";
+const currentMode: string = data.config?.mode || "auto";
+const isAutoMode: boolean = currentMode === "auto";
+const layouts: Record<string, string> = data.config?.layouts || {};
+const defaultLayout: string = data.config?.defaultLayout || "";
+const layoutKeys = Object.keys(layouts);
+const modeTooltipTitle =
+    currentMode === "auto"
+        ? "Auto Mode"
+        : "Files Mode";
+const modeTooltipBody =
+    currentMode === "auto"
+        ? `Discovers all <code>.astro</code> files inside <code>src/</code> automatically. No config file required.<br><br>To exclude paths, add an <code>exclude</code> list in <code>stargazer.config.ts</code>.<br>To switch: set <code>mode: 'files'</code> and list components in your config.`
+        : `Components are listed manually in <code>stargazer.config.ts</code>.<br><br>To auto-discover everything, set <code>mode: 'auto'</code> in your config.`;
+const groups = new Map<string, RegistryEntry[]>();
+for (const comp of components) {
+    const cat = comp.category || "Uncategorized";
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat)!.push(comp);
+}
+const categories = Array.from(groups.entries());
+const navLinksConfig: any[] = data.config?.navLinks || [];
+const logoHref: string = data.config?.logoHref || basePath;
+const layoutsJson = JSON.stringify(layouts);
+const componentsJson = JSON.stringify(
+    components.map((c) => ({
+        slug: c.slug,
+        layoutKey: c.layoutKey || "",
+        name: c.name,
+        category: c.category || "Uncategorized",
+    })),
+);
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="icon"
+            id="sg-favicon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9' stroke='%23DDF160' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+        />
+        <script>
+            // @ts-nocheck
+            (function () {
+                try {
+                    var canvas = document.createElement("canvas");
+                    canvas.width = canvas.height = 64;
+                    var ctx = canvas.getContext("2d");
+                    if (!ctx || typeof Path2D === "undefined") return;
+                    var link = document.getElementById("sg-favicon");
+                    if (!link) return;
+                    var path = new Path2D(
+                        "M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9",
+                    );
+                    var t = 0;
+                    setInterval(function () {
+                        t += 0.06;
+                        var p = 0.72 + 0.28 * Math.sin(t);
+                        ctx!.clearRect(0, 0, 64, 64);
+                        ctx!.save();
+                        ctx!.scale(64 / 24, 64 / 24);
+                        ctx!.shadowColor = "#DDF160";
+                        ctx!.shadowBlur = 4 * p;
+                        ctx!.strokeStyle = "rgba(221,241,96," + p + ")";
+                        ctx!.lineWidth = 2;
+                        ctx!.lineCap = "round";
+                        ctx!.lineJoin = "round";
+                        ctx!.stroke(path);
+                        ctx!.restore();
+                        (link as HTMLLinkElement).href = canvas.toDataURL();
+                    }, 60);
+                } catch (e) {}
+            })();
+        </script>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Stargazer - Component Registry</title>
+        <style is:global>
+            @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Orbitron:wght@400..900&display=swap");
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: var(--sg-border-accent);
+                border-radius: 3px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--sg-text-muted);
+            }
+            * {
+                scrollbar-width: thin;
+                scrollbar-color: var(--sg-border-accent) transparent;
+            }
+            :root {
+                --sg-accent: #ddf160;
+                --sg-bg: #08081a;
+                --sg-bg-mid: #0f0f24;
+                --sg-border: rgba(221, 241, 96, 0.08);
+                --sg-border-strong: rgba(221, 241, 96, 0.2);
+                --sg-border-accent: rgba(221, 241, 96, 0.3);
+                --sg-text-primary: #ffffff;
+                --sg-text-muted: rgba(255, 255, 255, 0.5);
+                --sg-group-bg: rgba(255, 255, 255, 0.03);
+                --sg-group-border: rgba(255, 255, 255, 0.08);
+                --sg-card-bg: #121223;
+                --sg-card-bg-hover: #18182d;
+                --sg-tooltip-bg: #0d0d24;
+                --sg-tooltip-border: rgba(221, 241, 96, 0.25);
+                --sg-tooltip-text: rgba(255, 255, 255, 0.6);
+                --sg-glass-bg: rgba(255, 255, 255, 0.03);
+                --sg-glass-border: rgba(255, 255, 255, 0.08);
+                --sg-glass-text: rgba(255, 255, 255, 0.4);
+                --sg-glass-hover-bg: rgba(255, 255, 255, 0.05);
+                --sg-glass-hover-border: rgba(255, 255, 255, 0.15);
+                --sg-modal-bg: #0d0d24;
+                --sg-modal-border: rgba(221, 241, 96, 0.25);
+                --sg-modal-text: #ffffff;
+                --sg-modal-input-bg: rgba(255, 255, 255, 0.04);
+                --sg-modal-input-border: rgba(221, 241, 96, 0.15);
+                --sg-modal-hint: rgba(255, 255, 255, 0.35);
+                --sg-modal-btn: transparent;
+                --sg-modal-btn-border: rgba(255, 255, 255, 0.1);
+                --sg-modal-btn-text: rgba(255, 255, 255, 0.35);
+                --sg-mono: "JetBrains Mono", "Courier New", monospace;
+                --sg-ui: "Orbitron", monospace;
+            }
+            html[data-theme="light"] {
+                --sg-accent: #8a9600;
+                --sg-bg: #ffffff;
+                --sg-bg-mid: #f6f8fb;
+                --sg-border: rgba(0, 0, 0, 0.08);
+                --sg-border-strong: rgba(0, 0, 0, 0.15);
+                --sg-border-accent: rgba(146, 163, 0, 0.3);
+                --sg-text-primary: rgba(0, 0, 0, 0.9);
+                --sg-text-muted: rgba(0, 0, 0, 0.55);
+                --sg-group-bg: rgba(0, 0, 0, 0.05);
+                --sg-group-border: rgba(0, 0, 0, 0.1);
+                --sg-card-bg: #ffffff;
+                --sg-card-bg-hover: #f8f9fa;
+                --sg-tooltip-bg: #ffffff;
+                --sg-tooltip-border: rgba(0, 0, 0, 0.15);
+                --sg-tooltip-text: rgba(0, 0, 0, 0.8);
+                --sg-glass-bg: rgba(0, 0, 0, 0.03);
+                --sg-glass-border: rgba(0, 0, 0, 0.08);
+                --sg-glass-text: rgba(0, 0, 0, 0.5);
+                --sg-glass-hover-bg: rgba(0, 0, 0, 0.06);
+                --sg-glass-hover-border: rgba(0, 0, 0, 0.15);
+                --sg-modal-bg: #ffffff;
+                --sg-modal-border: rgba(0, 0, 0, 0.1);
+                --sg-modal-text: #000000;
+                --sg-modal-input-bg: rgba(0, 0, 0, 0.02);
+                --sg-modal-input-border: rgba(0, 0, 0, 0.1);
+                --sg-modal-hint: rgba(0, 0, 0, 0.5);
+                --sg-modal-btn: transparent;
+                --sg-modal-btn-border: rgba(0, 0, 0, 0.15);
+                --sg-modal-btn-text: rgba(0, 0, 0, 0.6);
+            }
+            body {
+                background: var(--sg-bg);
+                color: var(--sg-text-primary);
+                font-family: var(--sg-mono);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+                overflow-x: hidden;
+            }
+            body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background-image:
+                    linear-gradient(
+                        rgba(221, 241, 96, 0.03) 1px,
+                        transparent 1px
+                    ),
+                    linear-gradient(
+                        90deg,
+                        rgba(221, 241, 96, 0.03) 1px,
+                        transparent 1px
+                    );
+                background-size: 40px 40px;
+                pointer-events: none;
+                z-index: 1;
+            }
+            .page {
+                position: relative;
+                z-index: 2;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0;
+                gap: 0;
+                min-height: 100vh;
+                width: 100%;
+            }
+            .sg-top-bar {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                min-height: 52px;
+                height: auto;
+                border-bottom: none;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: rgba(8, 8, 26, 0.55);
+                backdrop-filter: blur(16px) saturate(1.4);
+                -webkit-backdrop-filter: blur(16px) saturate(1.4);
+            }
+            html[data-theme="light"] .sg-top-bar {
+                background: rgba(255, 255, 255, 0.55);
+            }
+            .sg-top-row {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                gap: 12px;
+                padding: 10px 20px 6px;
+                flex-wrap: wrap;
+                row-gap: 8px;
+            }
+            /* Search gets its own centered row on small screens */
+            .sg-top-row .search-wrap {
+                flex: 0 1 100%;
+                max-width: 100%;
+                min-width: 0;
+                margin-left: 0 !important;
+            }
+            .sg-bottom-row {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                gap: 8px;
+                padding: 6px 20px 10px;
+                flex-wrap: wrap;
+                row-gap: 6px;
+            }
+            /* Controls group (Settings, Docs, Home, Theme) */
+            .sg-controls-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            /* Wide screens: single row */
+            @media (min-width: 960px) {
+                .sg-top-bar {
+                    flex-direction: row;
+                    align-items: center;
+                    padding: 0 20px;
+                }
+                .sg-top-row {
+                    flex: 0 0 auto;
+                    width: auto;
+                    padding: 0;
+                    justify-content: flex-start;
+                    flex-wrap: nowrap;
+                    gap: 12px;
+                }
+                .sg-top-row .search-wrap {
+                    flex: 0 1 240px;
+                    max-width: 240px;
+                }
+                .sg-bottom-row {
+                    flex: 1 1 auto;
+                    width: auto;
+                    padding: 0 0 0 16px;
+                    justify-content: flex-start;
+                    flex-wrap: nowrap;
+                }
+                .sg-controls-group {
+                    margin-left: auto;
+                    flex-wrap: nowrap;
+                    justify-content: flex-end;
+                }
+            }
+            .sg-bottom-row .sg-meta-stats {
+                margin: 0;
+                flex-shrink: 0;
+                gap: 8px;
+            }
+            .sg-global-btn {
+                flex-shrink: 0;
+            }
+            .sg-content {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+                padding: 32px 24px 4rem;
+                gap: 24px;
+            }
+            .sg-observatory {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-bottom: 8px;
+            }
+            .header-brand {
+                font-family: var(--sg-ui);
+                font-weight: 800;
+                font-size: 28px;
+                color: var(--sg-text-primary);
+                line-height: 1;
+                letter-spacing: 0.04em;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.22em;
+            }
+            .header-brand .sg-logo-icon {
+                display: block;
+                width: 0.85em;
+                height: 0.85em;
+                overflow: visible;
+                transform: translateY(-0.04em);
+                animation: pulseStar 1.4s ease-in-out 1.8s infinite alternate;
+            }
+            .header-brand .sg-logo-icon path {
+                stroke-dasharray: 80;
+                stroke-dashoffset: 80;
+                animation: drawStar 2s cubic-bezier(0.22, 1, 0.36, 1) 0.4s
+                    forwards;
+            }
+            @keyframes drawStar {
+                to {
+                    stroke-dashoffset: 0;
+                }
+            }
+            @keyframes pulseStar {
+                from {
+                    filter: drop-shadow(0 0 0px var(--sg-accent));
+                    transform: translateY(-0.04em) scale(1);
+                }
+                to {
+                    filter: drop-shadow(0 0 6px var(--sg-accent));
+                    transform: translateY(-0.04em) scale(1.15);
+                }
+            }
+            .sg-stars,
+            .sg-twinkling,
+            .sg-twinkling-big {
+                pointer-events: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+            }
+            .sg-stars {
+                width: 1px;
+                height: 1px;
+                background: transparent;
+                animation: twinkle 4s ease-in-out infinite alternate;
+                z-index: 0;
+            }
+            .sg-stars::after {
+                content: " ";
+                position: absolute;
+                top: 2000px;
+                width: 1px;
+                height: 1px;
+                background: transparent;
+                animation: twinkle 4s ease-in-out 2s infinite alternate;
+            }
+            .sg-twinkling {
+                width: 2px;
+                height: 2px;
+                background: transparent;
+                animation: twinkle 7s ease-in-out 1s infinite alternate;
+                z-index: 0;
+            }
+            .sg-twinkling::after {
+                content: " ";
+                position: absolute;
+                top: 2000px;
+                width: 2px;
+                height: 2px;
+                background: transparent;
+                animation: twinkle 7s ease-in-out 3.5s infinite alternate;
+            }
+            .sg-twinkling-big {
+                width: 3px;
+                height: 3px;
+                background: transparent;
+                animation: twinkle 11s ease-in-out 0.5s infinite alternate;
+                z-index: 0;
+            }
+            .sg-twinkling-big::after {
+                content: " ";
+                position: absolute;
+                top: 2000px;
+                width: 3px;
+                height: 3px;
+                background: transparent;
+                animation: twinkle 11s ease-in-out 5s infinite alternate;
+            }
+            @keyframes twinkle {
+                0% {
+                    opacity: 0.2;
+                }
+                50% {
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0.3;
+                }
+            }
+            @keyframes fadeUpIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(32px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes fadeDownIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-24px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes scaleIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.88) translateY(16px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            @keyframes wordmarkReveal {
+                from {
+                    opacity: 0;
+                    transform: scale(0.96) translateY(-16px);
+                    letter-spacing: 0.18em;
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                    letter-spacing: 0.04em;
+                }
+            }
+            @keyframes drawLine {
+                from {
+                    clip-path: inset(0 100% 0 0);
+                }
+                to {
+                    clip-path: inset(0 0% 0 0);
+                }
+            }
+            @keyframes searchBuild {
+                from {
+                    max-width: 0;
+                }
+                to {
+                    max-width: 900px;
+                }
+            }
+            @keyframes searchSlashFade {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .sg-anim-wordmark {
+                opacity: 0;
+            }
+            .sg-anim-title {
+                opacity: 0;
+            }
+            .sg-anim-sub {
+                opacity: 0;
+            }
+            .sg-anim-status {
+                opacity: 0;
+            }
+            .search-wrap.sg-anim-search {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+            .search-wrap.sg-anim-search::before {
+                opacity: 0;
+            }
+            .sg-reveal {
+                opacity: 0;
+            }
+            .sg-reveal-card {
+                opacity: 0;
+            }
+            .sg-anim-wordmark.go {
+                animation: wordmarkReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1)
+                    forwards;
+            }
+            .sg-anim-title.go {
+                animation: fadeDownIn 0.6s cubic-bezier(0.22, 1, 0.36, 1)
+                    forwards;
+            }
+            .sg-anim-sub.go {
+                animation: fadeDownIn 0.5s cubic-bezier(0.22, 1, 0.36, 1)
+                    forwards;
+            }
+            .sg-anim-status.go {
+                animation: fadeUpIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+            .search-wrap.sg-anim-search.go {
+                animation: fadeUpIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+            .search-wrap.sg-anim-search.go::before {
+                animation: searchSlashFade 0.3s ease forwards 0.45s;
+            }
+            .sg-reveal.go {
+                animation: fadeUpIn 0.55s cubic-bezier(0.22, 1, 0.36, 1)
+                    forwards;
+            }
+            .sg-reveal-card.go {
+                animation: scaleIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+            .sg-observatory-label {
+                font-family: var(--sg-mono);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.18em;
+                color: var(--sg-text-muted);
+                opacity: 0.5;
+                text-transform: uppercase;
+                margin-bottom: -16px;
+            }
+            .sg-observatory-label span {
+                opacity: 0.6;
+            }
+            h1 {
+                font-family: var(--sg-ui);
+                font-size: 24px;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                color: var(--sg-text-primary);
+                text-transform: uppercase;
+            }
+            .header-sub {
+                font-size: 12px;
+                color: var(--sg-text-muted);
+                letter-spacing: 0.08em;
+            }
+            .sg-meta-stats {
+                margin-top: 24px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                font-family: var(--sg-mono);
+                font-size: 10px;
+                color: var(--sg-text-muted);
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            .sg-meta-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .sg-meta-stats .ok::before {
+                content: "\25A0";
+                color: #2ecc71;
+                font-size: 8px;
+            }
+            .sg-meta-stats .auto::before {
+                content: "\25C6";
+                color: var(--sg-accent);
+                font-size: 8px;
+            }
+            .sg-mode-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+            #sg-mode-info-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                border: 1px solid var(--sg-glass-text);
+                background: var(--sg-glass-bg);
+                font-size: 7px;
+                color: var(--sg-glass-text);
+                cursor: help;
+                flex-shrink: 0;
+                transition:
+                    border-color 0.2s,
+                    color 0.2s,
+                    background 0.2s;
+                font-style: normal;
+                padding: 0;
+                font-family: var(--sg-mono);
+            }
+            #sg-mode-info-btn:hover {
+                border-color: var(--sg-accent);
+                color: var(--sg-accent);
+                background: rgba(221, 241, 96, 0.12);
+            }
+            #sg-mode-tip {
+                position: absolute;
+                width: 300px;
+                background: var(--sg-tooltip-bg);
+                border: 1px solid var(--sg-tooltip-border);
+                border-radius: 6px;
+                padding: 14px 16px;
+                font-size: 10px;
+                letter-spacing: 0.06em;
+                line-height: 1.7;
+                color: var(--sg-tooltip-text);
+                text-transform: none;
+                pointer-events: none;
+                opacity: 0;
+                visibility: hidden;
+                transition:
+                    opacity 0.15s ease,
+                    visibility 0.15s ease;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+                z-index: 99999;
+                text-align: left;
+                white-space: normal;
+            }
+            #sg-mode-tip.visible {
+                opacity: 1;
+                visibility: visible;
+            }
+            #sg-mode-tip strong {
+                color: var(--sg-accent);
+                display: block;
+                margin-bottom: 6px;
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            #sg-mode-tip code {
+                background: rgba(221, 241, 96, 0.1);
+                border-radius: 3px;
+                padding: 1px 5px;
+                font-size: 9px;
+                color: var(--sg-accent);
+                font-family: var(--sg-mono);
+            }
+            #sg-card-tip {
+                position: absolute;
+                width: 280px;
+                background: var(--sg-tooltip-bg);
+                border: 1px solid var(--sg-border-strong);
+                border-radius: 6px;
+                padding: 12px 14px;
+                font-size: 10px;
+                letter-spacing: 0.06em;
+                line-height: 1.7;
+                color: var(--sg-tooltip-text);
+                text-transform: none;
+                pointer-events: none;
+                opacity: 0;
+                visibility: hidden;
+                transition:
+                    opacity 0.12s ease,
+                    visibility 0.12s ease;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+                z-index: 1000;
+                text-align: left;
+                white-space: normal;
+            }
+            #sg-card-tip.visible {
+                opacity: 1;
+                visibility: visible;
+            }
+            #sg-card-tip strong {
+                color: var(--sg-accent);
+                display: block;
+                margin-bottom: 5px;
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+            }
+            #sg-card-tip code {
+                background: rgba(221, 241, 96, 0.1);
+                border-radius: 3px;
+                padding: 1px 4px;
+                font-size: 9px;
+                color: var(--sg-accent);
+                font-family: var(--sg-mono);
+            }
+            .sg-global-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: var(--sg-group-bg);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid var(--sg-group-border);
+                color: var(--sg-text-muted);
+                font-family: var(--sg-mono);
+                font-size: 10px;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                padding: 5px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            }
+            .sg-global-btn:hover {
+                background: var(--sg-accent-dim, rgba(221, 241, 96, 0.1));
+                border-color: var(--sg-accent);
+                color: var(--sg-accent);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+                transform: translateY(-1px);
+            }
+            .sg-global-btn.has-override {
+                background: rgba(221, 241, 96, 0.08);
+                border-color: rgba(221, 241, 96, 0.35);
+                color: var(--sg-accent);
+            }
+            .sg-btn-group {
+                display: flex;
+                align-items: stretch;
+                gap: 2px;
+                background: var(--sg-group-bg);
+                border: 1px solid var(--sg-group-border);
+                border-radius: 4px;
+                padding: 3px;
+            }
+            .sg-btn {
+                background: transparent;
+                border: none;
+                padding: 5px 9px;
+                border-radius: 3px;
+                font-size: 11px;
+                line-height: 1;
+                color: var(--sg-text-muted);
+                transition:
+                    background 0.15s,
+                    color 0.15s,
+                    box-shadow 0.15s;
+                font-family: var(--sg-mono);
+                white-space: nowrap;
+                text-transform: uppercase;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .sg-btn:hover {
+                color: var(--sg-text-primary);
+                background: var(--sg-group-bg);
+            }
+            .sg-nav-highlight {
+                background: rgba(255, 93, 1, 0.12) !important;
+                color: #ff5d01 !important;
+                border: 1px solid rgba(255, 93, 1, 0.35) !important;
+            }
+            .sg-nav-highlight:hover {
+                background: rgba(255, 93, 1, 0.22) !important;
+                color: #ff8040 !important;
+            }
+            html[data-theme="light"] .sg-nav-highlight {
+                background: rgba(255, 93, 1, 0.1) !important;
+                color: #b03a00 !important;
+                border-color: rgba(255, 93, 1, 0.45) !important;
+            }
+            .sg-theme-btn {
+                transition: background 0.25s ease, color 0.25s ease;
+            }
+            .sg-theme-label {
+                display: inline-block;
+                max-width: 36px;
+                opacity: 1;
+                overflow: hidden;
+                white-space: nowrap;
+                transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                            opacity   0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .sg-theme-btn.active .sg-theme-label {
+                max-width: 0;
+                opacity: 0;
+            }
+            .sg-theme-btn.active {
+                background: var(--sg-accent);
+                color: var(--sg-bg);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+            html[data-theme="light"] .sg-theme-btn.active {
+                color: #ffffff;
+            }
+            .sg-btn-icon {
+                width: 13px;
+                height: 13px;
+                flex-shrink: 0;
+                display: block;
+            }
+            .search-wrap {
+                width: 260px;
+                margin-left: 24px;
+                position: relative;
+            }
+            .search-wrap::before {
+                content: "/";
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--sg-accent);
+                font-size: 14px;
+                font-weight: 700;
+                pointer-events: none;
+            }
+            #sg-search {
+                width: 100%;
+                background: var(--sg-group-bg);
+                border: 1px solid var(--sg-border-strong);
+                border-radius: 3px;
+                color: var(--sg-text-primary);
+                font-family: var(--sg-mono);
+                font-size: 13px;
+                padding: 10px 16px 10px 34px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            #sg-search::placeholder {
+                color: var(--sg-text-muted);
+            }
+            #sg-search:focus {
+                border-color: var(--sg-accent);
+            }
+            #sg-no-results {
+                display: none;
+                color: var(--sg-text-muted);
+                font-size: 12px;
+                letter-spacing: 0.08em;
+                padding: 2rem 0;
+            }
+            .empty-state {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: 80px 24px;
+                color: var(--sg-text-muted);
+                font-family: var(--sg-mono);
+                font-size: 12px;
+                line-height: 1.8;
+                letter-spacing: 0.04em;
+            }
+            .empty-state code {
+                background: var(--sg-group-bg);
+                border: 1px solid var(--sg-border-strong);
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 11px;
+                color: var(--sg-accent);
+            }
+            .category-title {
+                width: 100%;
+                font-family: var(--sg-mono);
+                font-size: 20px;
+                font-weight: 700;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--sg-accent);
+                opacity: 0.6;
+                margin: 0;
+            }
+
+            .category-title-wrapper {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 1.2rem;
+                margin-bottom: 0.75rem;
+                padding-left: 4px;
+                width: 100%;
+            }
+            .sg-group:first-of-type .category-title-wrapper {
+                margin-top: 0.5rem;
+            }
+
+            .sg-glass-group {
+                display: inline-flex;
+                align-items: stretch;
+                background: var(--sg-glass-bg);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid var(--sg-glass-border);
+                border-radius: 6px;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+                transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            }
+            .sg-glass-group:hover {
+                background: var(--sg-glass-hover-bg);
+                border-color: var(--sg-glass-hover-border);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+                transform: translateY(-1px);
+            }
+
+            .sg-glass-action {
+                background: var(--sg-glass-bg);
+                border: 1px solid var(--sg-glass-border);
+                border-radius: 6px;
+                padding: 6px 10px;
+                color: var(--sg-glass-text);
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                font-size: 14px;
+                align-items: center;
+                justify-content: center;
+            }
+            .sg-glass-action:hover {
+                color: var(--sg-accent);
+                background: var(--sg-accent-dim, rgba(221, 241, 96, 0.08));
+                border-color: var(--sg-accent);
+            }
+            .sg-glass-link {
+                background: transparent;
+                color: var(--sg-text-muted);
+                text-decoration: none;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                padding: 6px 14px;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+            }
+            .sg-glass-link:hover {
+                color: var(--sg-accent);
+                background: var(--sg-glass-hover-bg);
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 12px;
+                width: 100%;
+            }
+
+            a.sg-card {
+                background: var(--sg-card-bg);
+                border: 1px solid var(--sg-border-strong);
+                border-radius: 6px;
+                padding: 14px 16px 12px;
+                text-decoration: none;
+                color: var(--sg-text-primary);
+                transition:
+                    background 0.15s,
+                    border-color 0.15s;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                position: relative;
+                overflow: hidden;
+                min-width: 0;
+                min-height: 72px;
+                max-width: 100%;
+                width: 100%;
+            }
+            a.sg-card::after {
+                content: "";
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 0;
+                height: 2px;
+                background: var(--sg-accent);
+                transition: width 0.25s ease;
+            }
+            a.sg-card:hover {
+                background: var(--sg-card-bg-hover);
+                border-color: var(--sg-accent);
+            }
+            a.sg-card:hover::after {
+                width: 100%;
+            }
+            a.sg-card:hover .sg-edit-btn {
+                opacity: 1;
+            }
+            .card-label {
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.18em;
+                color: var(--sg-accent);
+                font-weight: 700;
+                opacity: 0.7;
+            }
+            .card-name {
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: 0.02em;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 0;
+            }
+            .card-desc {
+                font-size: 11px;
+                color: var(--sg-text-muted);
+                letter-spacing: 0.02em;
+                margin-top: 2px;
+                line-height: 1.5;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .card-meta {
+                font-size: 11px;
+                color: var(--sg-text-muted);
+                letter-spacing: 0.04em;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 0;
+                flex: 1;
+            }
+            .card-no-layout {
+                color: rgba(255, 180, 50, 0.4);
+            }
+            .card-override {
+                display: none;
+                font-size: 9px;
+                color: var(--sg-accent);
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                margin-top: 2px;
+                opacity: 0.8;
+            }
+            .arrow {
+                font-size: 13px;
+                color: rgba(221, 241, 96, 0.3);
+                transition:
+                    color 0.2s,
+                    transform 0.2s;
+                flex-shrink: 0;
+            }
+            a.sg-card:hover .arrow {
+                color: var(--sg-accent);
+                transform: translate(2px, -2px);
+            }
+            .card-head {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .card-foot {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-top: auto;
+                padding-top: 6px;
+                gap: 8px;
+                min-height: 24px;
+            }
+            .sg-edit-btn {
+                width: 22px;
+                height: 22px;
+                flex-shrink: 0;
+                background: var(--sg-glass-bg);
+                border: 1px solid var(--sg-glass-border);
+                border-radius: 5px;
+                color: var(--sg-glass-text);
+                font-size: 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+                padding: 0;
+                line-height: 1;
+                font-family: var(--sg-mono);
+                margin-left: auto;
+            }
+            .sg-edit-btn:hover {
+                background: var(--sg-glass-hover-bg);
+                border-color: var(--sg-glass-hover-border);
+                color: var(--sg-accent);
+            }
+            a.sg-viewall-card {
+                border-style: dashed;
+                background: transparent;
+            }
+            a.sg-viewall-card:hover {
+                background: var(--sg-glass-hover-bg);
+                border-color: var(--sg-accent);
+            }
+            a.sg-viewall-card .card-name {
+                color: var(--sg-text-muted);
+            }
+            a.sg-viewall-card:hover .card-name {
+                color: var(--sg-accent);
+            }
+            a.sg-viewall-card .sg-edit-btn {
+                border-style: dashed;
+                border-color: var(--sg-glass-border);
+                background: transparent;
+            }
+            a.sg-viewall-card:hover .sg-edit-btn {
+                border-color: var(--sg-glass-hover-border);
+            }
+            .empty-state {
+                max-width: 500px;
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--sg-text-muted);
+                font-size: 13px;
+                line-height: 1.8;
+            }
+            .empty-state code {
+                background: var(--sg-accent-dim, rgba(221, 241, 96, 0.1));
+                color: var(--sg-accent);
+                padding: 2px 8px;
+                border-radius: 2px;
+                font-size: 12px;
+            }
+            footer {
+                margin-top: auto;
+                padding: 32px;
+                font-size: 10px;
+                color: var(--sg-text-muted);
+                opacity: 0.6;
+                letter-spacing: 0.1em;
+                text-align: center;
+            }
+            .sg-group {
+                width: 100%;
+            }
+            .sg-group[hidden] {
+                display: none;
+            }
+            body:has(dialog#sg-modal[open]) {
+                overflow: hidden;
+            }
+            dialog#sg-modal {
+                background: var(--sg-modal-bg);
+                border: 1px solid var(--sg-modal-border);
+                border-radius: 4px;
+                padding: 0;
+                width: 500px;
+                max-width: 95vw;
+                color: var(--sg-modal-text);
+                font-family: var(--sg-mono);
+                box-shadow:
+                    0 20px 80px rgba(0, 0, 0, 0.8),
+                    0 0 30px rgba(221, 241, 96, 0.04);
+                position: fixed;
+                inset: 0;
+                margin: auto;
+                height: fit-content;
+            }
+            dialog#sg-modal::backdrop {
+                background: rgba(0, 0, 0, 0.65);
+                backdrop-filter: blur(3px);
+            }
+            .sg-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--sg-modal-border);
+            }
+            .sg-modal-title {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: var(--sg-accent);
+            }
+            .sg-modal-close {
+                background: transparent;
+                border: none;
+                color: var(--sg-modal-hint);
+                cursor: pointer;
+                font-size: 18px;
+                line-height: 1;
+                padding: 0 4px;
+                font-family: var(--sg-mono);
+                transition: color 0.2s;
+            }
+            .sg-modal-close:hover {
+                color: var(--sg-modal-text);
+            }
+            .sg-modal-body {
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                max-height: calc(90vh - 120px);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+            .sg-modal-field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .sg-modal-field label {
+                font-size: 10px;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--sg-modal-hint);
+            }
+            .sg-modal-field select,
+            .sg-modal-field textarea {
+                width: 100%;
+                background: var(--sg-modal-input-bg);
+                border: 1px solid var(--sg-modal-input-border);
+                border-radius: 3px;
+                color: var(--sg-modal-text);
+                font-family: var(--sg-mono);
+                font-size: 12px;
+                padding: 10px 12px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            .sg-modal-field select:focus,
+            .sg-modal-field textarea:focus {
+                border-color: var(--sg-accent);
+            }
+            .sg-modal-field textarea {
+                resize: vertical;
+                min-height: 110px;
+                line-height: 1.6;
+            }
+            .sg-modal-field textarea::placeholder {
+                color: var(--sg-modal-hint);
+            }
+            .sg-modal-field select option {
+                background: var(--sg-modal-bg);
+            }
+            .sg-visibility-list {
+                display: flex;
+                flex-direction: column;
+                background: var(--sg-modal-input-bg);
+                border: 1px solid var(--sg-modal-input-border);
+                border-radius: 3px;
+                padding: 12px;
+            }
+            .sg-visibility-group {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-bottom: 8px;
+            }
+            .sg-visibility-group:last-child {
+                margin-bottom: 0;
+            }
+            .sg-visibility-cat {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--sg-modal-text);
+                cursor: pointer;
+                padding: 4px 6px;
+                user-select: none;
+            }
+            .sg-visibility-cat input {
+                accent-color: var(--sg-accent);
+                cursor: pointer;
+                margin: 0;
+            }
+            .sg-visibility-items {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                padding: 0 10px 0 28px;
+            }
+            .sg-visibility-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 11px;
+                color: var(--sg-modal-hint);
+                cursor: pointer;
+                padding: 3px 0;
+                transition: color 0.1s;
+                user-select: none;
+            }
+            .sg-visibility-item:hover {
+                color: var(--sg-modal-text);
+            }
+            .sg-visibility-item.disabled {
+                opacity: 0.3;
+                pointer-events: none;
+            }
+            .sg-visibility-item input {
+                accent-color: var(--sg-accent);
+                cursor: pointer;
+                margin: 0;
+            }
+            .sg-modal-hint {
+                font-size: 10px;
+                color: var(--sg-modal-hint);
+                line-height: 1.5;
+            }
+            .sg-modal-footer {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+                padding: 14px 20px;
+                border-top: 1px solid var(--sg-modal-btn-border);
+            }
+            .sg-modal-btn {
+                background: var(--sg-modal-btn);
+                border: 1px solid var(--sg-modal-btn-border);
+                color: var(--sg-modal-btn-text);
+                font-family: var(--sg-mono);
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                padding: 8px 16px;
+                border-radius: 2px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .sg-modal-btn:hover {
+                border-color: rgba(255, 80, 80, 0.35);
+                color: #ff6b6b;
+            }
+            .sg-modal-btn.primary {
+                background: var(--sg-accent-dim, rgba(221, 241, 96, 0.12));
+                border-color: var(--sg-accent);
+                color: var(--sg-accent);
+            }
+            .sg-modal-btn.primary:hover {
+                background: var(--sg-accent-hover, rgba(221, 241, 96, 0.2));
+            }
+            .sg-props-error {
+                font-size: 10px;
+                color: #ff6b6b;
+                margin-top: -10px;
+                display: none;
+            }
+            #sg-back-top {
+                position: fixed;
+                bottom: 32px;
+                right: 32px;
+                width: 40px;
+                height: 40px;
+                background: var(--sg-bg-mid);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid var(--sg-border);
+                border-radius: 50%;
+                color: var(--sg-text-muted);
+                font-size: 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transform: translateY(12px);
+                transition:
+                    opacity 0.3s ease,
+                    transform 0.3s ease,
+                    border-color 0.2s,
+                    background 0.2s,
+                    color 0.2s;
+                z-index: 9000;
+                pointer-events: none;
+                font-family: var(--sg-mono);
+            }
+            #sg-back-top.visible {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+            #sg-back-top:hover {
+                background: var(--sg-card-bg);
+                border-color: var(--sg-border-accent);
+                color: var(--sg-accent);
+                transform: translateY(-2px);
+            }
+            .sg-footer {
+                text-align: center;
+                padding: 40px 20px;
+                margin-top: 60px;
+                border-top: 1px solid var(--sg-border);
+                color: var(--sg-text-muted);
+            }
+            .sg-footer-joke {
+                font-size: 13px;
+                font-weight: 500;
+                font-style: italic;
+                color: var(--sg-text-muted);
+                margin-bottom: 12px;
+                font-family: sans-serif;
+                letter-spacing: 0.02em;
+            }
+            .sg-footer-credits {
+                font-size: 10px;
+                font-family: var(--sg-mono);
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--sg-text-muted);
+                opacity: 0.7;
+            }
+            .sg-footer-credits a {
+                color: var(--sg-accent);
+                font-weight: 800;
+                opacity: 0.8;
+                text-decoration: none;
+                transition: opacity 0.2s;
+            }
+            .sg-footer-credits a:hover {
+                opacity: 1;
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sg-stars" id="sg-stars"></div>
+        <div class="sg-twinkling" id="sg-twinkling"></div>
+        <div class="sg-twinkling-big" id="sg-twinkling-big"></div>
+        <script
+            is:inline
+            set:html={`
+      (function() {
+        var s = document.getElementById('sg-stars');
+        var t = document.getElementById('sg-twinkling');
+        var b = document.getElementById('sg-twinkling-big');
+        if(s) s.style.boxShadow = ${JSON.stringify(shadowsSmall)};
+        if(t) t.style.boxShadow = ${JSON.stringify(shadowsMedium)};
+        if(b) b.style.boxShadow = ${JSON.stringify(shadowsBig)};
+      })();
+    `}
+        />
+        <div class="page">
+            <div class="sg-top-bar">
+                <!-- Row 1: Logo (+ search inline on wide screens) -->
+                <div class="sg-top-row">
+                    <a href={logoHref} class="header-brand sg-anim-wordmark" style="text-decoration:none;color:inherit;">
+                        <svg
+                            class="sg-logo-icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            ><path
+                                d="M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9"
+                                stroke="var(--sg-accent)"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"></path></svg
+                        >
+                        stargazer
+                    </a>
+                    {
+                        components.length > 4 && (
+                            <div class="search-wrap sg-anim-search">
+                                <input
+                                    id="sg-search"
+                                    type="text"
+                                    placeholder="search components..."
+                                    autocomplete="off"
+                                    spellcheck={false}
+                                />
+                            </div>
+                        )
+                    }
+                </div>
+                <!-- Row 3: Stats + Settings + Docs + Home + Theme -->
+                <div class="sg-bottom-row">
+                    <div class="sg-meta-stats sg-anim-status" style="animation-delay: 0.2s;">
+                        <span class={`sg-meta-item ${isAutoMode ? "auto" : "ok"}`}>
+                            <span class="sg-mode-badge">
+                                MODE: {currentMode.toUpperCase()}
+                                <button id="sg-mode-info-btn" aria-label="About this mode">i</button>
+                            </span>
+                        </span>
+                        <span id="sg-count-comps" class={`sg-meta-item ${isAutoMode ? "auto" : "ok"}`}>
+                            {components.length} component{components.length !== 1 ? "s" : ""}
+                        </span>
+                        <span id="sg-count-cats" class="sg-meta-item ok">
+                            {categories.length} categor{categories.length !== 1 ? "ies" : "y"}
+                        </span>
+                    </div>
+                    <div class="sg-controls-group">
+                        {navLinksConfig.map((link: any) => link.highlight ? (
+                            <a
+                                href={link.href}
+                                target={link.target || '_self'}
+                                class="sg-global-btn sg-nav-highlight sg-anim-status"
+                                style="text-decoration: none; display:inline-flex; align-items:center; gap:5px; animation-delay: 0.05s;"
+                            >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                                    <path d="M12 15L15 12M15 12L12 9M15 12H4M4 7.24802V7.2002C4 6.08009 4 5.51962 4.21799 5.0918C4.40973 4.71547 4.71547 4.40973 5.0918 4.21799C5.51962 4 6.08009 4 7.2002 4H16.8002C17.9203 4 18.4796 4 18.9074 4.21799C19.2837 4.40973 19.5905 4.71547 19.7822 5.0918C20 5.5192 20 6.07899 20 7.19691V16.8036C20 17.9215 20 18.4805 19.7822 18.9079C19.5905 19.2842 19.2837 19.5905 18.9074 19.7822C18.48 20 17.921 20 16.8031 20H7.19691C6.07899 20 5.5192 20 5.0918 19.7822C4.71547 19.5905 4.40973 19.2839 4.21799 18.9076C4 18.4798 4 17.9201 4 16.8V16.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                {link.label}
+                            </a>
+                        ) : null)}
+                        {navLinksConfig.some((l: any) => !l.highlight) && (
+                            <div class="sg-btn-group sg-anim-status" style="flex-shrink: 0; animation-delay: 0.05s;">
+                                {navLinksConfig.filter((l: any) => !l.highlight).map((link: any) => (
+                                    <a href={link.href} target={link.target || '_self'} class="sg-btn" style="text-decoration: none;">
+                                        {link.label}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                        <button
+                            id="sg-global-btn"
+                            class="sg-global-btn sg-anim-status"
+                            title="Edit global default props and layout"
+                            >⚙ Settings</button
+                        >
+                        <a
+                            href={`${basePath}/documentation`}
+                            class="sg-global-btn sg-anim-status"
+                            style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"
+                            title="Stargazer Documentation"
+                        >
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                style="flex-shrink:0;"
+                                ><path
+                                    d="M18 6.00002V6.75002H18.75V6.00002H18ZM15.7172 2.32614L15.6111 1.58368L15.7172 2.32614ZM4.91959 3.86865L4.81353 3.12619H4.81353L4.91959 3.86865ZM5.07107 6.75002H18V5.25002H5.07107V6.75002ZM18.75 6.00002V4.30604H17.25V6.00002H18.75ZM15.6111 1.58368L4.81353 3.12619L5.02566 4.61111L15.8232 3.0686L15.6111 1.58368ZM4.81353 3.12619C3.91638 3.25435 3.25 4.0227 3.25 4.92895H4.75C4.75 4.76917 4.86749 4.63371 5.02566 4.61111L4.81353 3.12619ZM18.75 4.30604C18.75 2.63253 17.2678 1.34701 15.6111 1.58368L15.8232 3.0686C16.5763 2.96103 17.25 3.54535 17.25 4.30604H18.75ZM5.07107 5.25002C4.89375 5.25002 4.75 5.10627 4.75 4.92895H3.25C3.25 5.9347 4.06532 6.75002 5.07107 6.75002V5.25002Z"
+                                    fill="currentColor"></path><path
+                                    d="M8 12H16"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"></path><path
+                                    d="M8 15.5H13.5"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"></path><path
+                                    d="M4 6V19C4 20.6569 5.34315 22 7 22H17C18.6569 22 20 20.6569 20 19V14M4 6V5M4 6H17C18.6569 6 20 7.34315 20 9V10"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"></path></svg
+                            >
+                            Docs
+                        </a>
+                        <div
+                            class="sg-btn-group sg-anim-status"
+                            style="animation-delay: 0.1s;"
+                        >
+                            <button
+                                class="sg-btn sg-theme-btn"
+                                data-theme="dark"
+                                title="Dark Mode"
+                                type="button"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    width="13"
+                                    height="13"
+                                    fill="none"
+                                    class="sg-btn-icon"
+                                    ><path
+                                        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"></path></svg
+                                >
+                                 <span class="sg-theme-label">DARK</span>
+                            </button>
+                            <button
+                                class="sg-btn sg-theme-btn"
+                                data-theme="light"
+                                title="Light Mode"
+                                type="button"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    width="13"
+                                    height="13"
+                                    fill="none"
+                                    class="sg-btn-icon"
+                                    ><circle
+                                        cx="12"
+                                        cy="12"
+                                        r="5"
+                                        stroke="currentColor"
+                                        stroke-width="2"></circle><line
+                                        x1="12" y1="1" x2="12" y2="3"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="12" y1="21" x2="12" y2="23"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="4.22" y1="4.22" x2="5.64" y2="5.64"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="18.36" y1="18.36" x2="19.78" y2="19.78"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="1" y1="12" x2="3" y2="12"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="21" y1="12" x2="23" y2="12"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="4.22" y1="19.78" x2="5.64" y2="18.36"
+                                        stroke="currentColor" stroke-width="2"></line><line
+                                        x1="18.36" y1="5.64" x2="19.78" y2="4.22"
+                                        stroke="currentColor" stroke-width="2"></line></svg
+                                >
+                                 <span class="sg-theme-label">LIGHT</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="sg-mode-tip" role="tooltip">
+                <strong>{modeTooltipTitle}</strong>
+                <span set:html={modeTooltipBody} />
+            </div>
+            <div class="sg-content">
+                <p class="sg-observatory-label sg-anim-title">// OBSERVATORY</p>
+                <p id="sg-no-results">No components match your search.</p>
+                {
+                    components.length === 0 ? (
+                        <div class="empty-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="opacity:0.3;margin-bottom:16px;" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <p style="font-size:14px;font-weight:700;margin-bottom:8px;">No components found</p>
+                            <p>
+                                We couldn't detect any components in your project.
+                                Check your configuration or make sure you have{" "}
+                                <code>.astro</code> files inside <code>src/</code>.
+                            </p>
+                            <p style="margin-top:0.75rem;">
+                                If using <code>mode: 'files'</code>, add your components to{" "}
+                                <code>stargazer.config.ts</code> in your project root.
+                            </p>
+                        </div>
+                    ) : (
+                        categories.map(([category, items]) => (
+                            <div
+                                class="sg-group"
+                                id={`cat-${category.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
+                                data-category={category}
+                            >
+                                <div class="category-title-wrapper sg-reveal">
+                                    <p class="category-title">{category}</p>
+                                </div>
+                                <div class="grid">
+                                    {items.map((comp) => (
+                                        <a
+                                            href={`${basePath}/${comp.slug}`}
+                                            class="sg-card sg-reveal-card"
+                                            data-slug={comp.slug}
+                                            data-name={comp.name.toLowerCase()}
+                                            data-category={category.toLowerCase()}
+                                        >
+                                            <div class="card-head">
+                                                <span class="card-name">
+                                                    {comp.name}
+                                                </span>
+                                                <span class="arrow">↗</span>
+                                            </div>
+                                            {comp.description && (
+                                                <span class="card-desc">
+                                                    {comp.description}
+                                                </span>
+                                            )}
+                                            <div class="card-foot">
+                                                {comp.hasLayout ? (
+                                                    <span class="card-meta">
+                                                        ⊞{" "}
+                                                        {layoutFileName(
+                                                            comp.layoutKey,
+                                                            layouts,
+                                                            defaultLayout,
+                                                        )}
+                                                    </span>
+                                                ) : (
+                                                    <span
+                                                        class="card-meta card-no-layout"
+                                                        data-tip="no-layout"
+                                                    >
+                                                        ⚠ no layout
+                                                    </span>
+                                                )}
+                                                <span
+                                                    class="card-override"
+                                                    data-tip="overridden"
+                                                >
+                                                    overridden
+                                                </span>
+                                                <button
+                                                    class="sg-edit-btn"
+                                                    data-slug={comp.slug}
+                                                    title="Edit layout & props for this component"
+                                                >
+                                                    ⚙
+                                                </button>
+                                            </div>
+                                        </a>
+                                    ))}
+
+                                    <a
+                                        href={`${basePath}/category/${encodeURIComponent(category.toLowerCase())}`}
+                                        class="sg-card sg-viewall-card sg-reveal-card"
+                                        data-category={category.toLowerCase()}
+                                    >
+                                        <div class="card-head">
+                                            <span class="card-name">
+                                                View All
+                                            </span>
+                                            <span class="arrow">↗</span>
+                                        </div>
+                                        <div class="card-foot">
+                                            <span
+                                                class="card-meta cat-layout"
+                                                data-category={category.toLowerCase()}
+                                            />
+                                            <button
+                                                class="sg-edit-btn sg-cat-setting-btn"
+                                                data-category={category.toLowerCase()}
+                                                title="Category Settings"
+                                            >
+                                                ⚙
+                                            </button>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        ))
+                    )
+                }
+            </div>{/* /sg-content */}
+        </div>{/* /page */}
+        <button id="sg-back-top" aria-label="Back to top">↑</button>
+        <div id="sg-card-tip" role="tooltip"></div>
+        <footer class="sg-footer">
+            <div class="sg-footer-joke">
+                Stargaze your components. Zero heavy deps, no throwaway pages.
+                Just Astro. 🚀
+            </div>
+            <div class="sg-footer-credits">
+                Developed by Josué Trindade © {new Date().getFullYear()}
+                <strong
+                    ><a href="https://webxtek.com" target="_blank">Webxtek</a
+                    ></strong
+                >
+            </div>
+        </footer>
+        <!-- Override Modal -->
+        <dialog id="sg-modal">
+            <div class="sg-modal-header">
+                <span class="sg-modal-title" id="sg-modal-title"
+                    >Edit Component</span
+                >
+                <button class="sg-modal-close" id="sg-modal-close">✕</button>
+            </div>
+            <div class="sg-modal-body">
+                <div class="sg-modal-field">
+                    <label>Layout</label>
+                    <select id="sg-modal-layout">
+                        <option value="">— Use config default —</option>
+                        {
+                            layoutKeys.map((key) => (
+                                <option value={key}>
+                                    {layoutFileName(key, layouts)} ({key})
+                                </option>
+                            ))
+                        }
+                    </select>
+                </div>
+                <div class="sg-modal-field">
+                    <label>Props (JSON)</label>
+                    <textarea
+                        id="sg-modal-props"
+                        placeholder={'{\n  "lang": "en"\n}'}></textarea>
+                    <span class="sg-modal-hint"
+                        >Merged on top of config defaults. Leave empty to use
+                        defaults.</span
+                    >
+                    <span class="sg-props-error" id="sg-props-error"
+                        >Invalid JSON</span
+                    >
+                </div>
+                <div
+                    class="sg-modal-field"
+                    id="sg-visibility-section"
+                    style="display:none; margin-top: 4px;"
+                >
+                    <label
+                        style="display: flex; justify-content: space-between; align-items: center;"
+                    >
+                        Visibility Toggles
+                        <input
+                            type="text"
+                            id="sg-visibility-search"
+                            placeholder="Search..."
+                            style="width: 140px; padding: 4px 8px; font-size: 10px; background: var(--sg-modal-input-bg); border: 1px solid var(--sg-modal-input-border); border-radius: 3px; color: var(--sg-modal-text); outline: none; font-family: var(--sg-mono);"
+                        />
+                    </label>
+                    <div class="sg-visibility-list" id="sg-visibility-list">
+                    </div>
+                    <span class="sg-modal-hint"
+                        >Uncheck components to hide them from the registry grid.</span
+                    >
+                </div>
+            </div>
+            <div class="sg-modal-footer">
+                <button class="sg-modal-btn" id="sg-modal-reset"
+                    >Reset to Config</button
+                >
+                <button class="sg-modal-btn primary" id="sg-modal-save"
+                    >Apply</button
+                >
+            </div>
+        </dialog>
+        <script
+            define:vars={{
+                layoutsJson,
+                componentsJson,
+                basePath,
+                defaultLayout,
+            }}
+        >
+            const LAYOUTS = JSON.parse(layoutsJson);
+            const COMPS = JSON.parse(componentsJson);
+            const STORAGE_KEY = "sg:overrides";
+
+            // Theme toggle
+            (function() {
+              function sgSetTheme(t) {
+                document.documentElement.setAttribute('data-theme', t);
+                try { localStorage.setItem('sg-theme', t); } catch(e) {}
+                document.querySelectorAll('[data-theme]').forEach(function(btn) {
+                  btn.classList.toggle('active', btn.getAttribute('data-theme') === t);
+                });
+              }
+              document.querySelectorAll('[data-theme]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                  sgSetTheme(btn.getAttribute('data-theme'));
+                });
+              });
+              // Init active state
+              var t = localStorage.getItem('sg-theme') || document.documentElement.getAttribute('data-theme') || 'dark';
+              document.documentElement.setAttribute('data-theme', t);
+              document.querySelectorAll('[data-theme]').forEach(function(btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-theme') === t);
+              });
+            })();
+
+            function getOv() {
+                try {
+                    return JSON.parse(
+                        localStorage.getItem(STORAGE_KEY) || "{}",
+                    );
+                } catch {
+                    return {};
+                }
+            }
+            function setOv(v) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(v));
+            }
+            function refreshUI() {
+                const ov = getOv();
+                document.querySelectorAll("a.sg-card").forEach((card) => {
+                    const slug = card.dataset.slug;
+                    const badge = card.querySelector(".card-override");
+                    if (badge)
+                        badge.style.display =
+                            slug && ov.components?.[slug] ? "" : "none";
+                    const metaEl = card.querySelector(
+                        ".card-meta:not(.card-no-layout)",
+                    );
+                    const noLayoutEl = card.querySelector(".card-no-layout");
+                    const activeMetaEl = metaEl || noLayoutEl;
+                    if (activeMetaEl && slug) {
+                        const compOv = ov.components?.[slug] || {};
+                        const globalOv = ov.global || {};
+                        const effectiveLayoutKey =
+                            compOv.layout || globalOv.layout || "";
+                        if (effectiveLayoutKey && LAYOUTS[effectiveLayoutKey]) {
+                            const isDefault =
+                                effectiveLayoutKey === defaultLayout;
+                            const layoutFile = isDefault
+                                ? "Default Layout"
+                                : LAYOUTS[effectiveLayoutKey]
+                                      .split("/")
+                                      .pop() || effectiveLayoutKey;
+                            activeMetaEl.textContent = "\u229e " + layoutFile;
+                            activeMetaEl.classList.remove("card-no-layout");
+                        } else {
+                            const comp = COMPS.find((c) => c.slug === slug);
+                            const configKey = comp?.layoutKey || "";
+                            if (configKey && LAYOUTS[configKey]) {
+                                const isDefault = configKey === defaultLayout;
+                                activeMetaEl.textContent =
+                                    "\u229e " +
+                                    (isDefault
+                                        ? "Default Layout"
+                                        : LAYOUTS[configKey].split("/").pop() ||
+                                          configKey);
+                                activeMetaEl.classList.remove("card-no-layout");
+                            } else {
+                                activeMetaEl.textContent = "\u26a0 no layout";
+                                activeMetaEl.classList.add("card-no-layout");
+                            }
+                        }
+                    }
+                });
+                const gbtn = document.getElementById("sg-global-btn");
+                if (gbtn) gbtn.classList.toggle("has-override", !!ov.global);
+                const hiddenSet = new Set(ov.global?.hidden || []);
+                const hiddenCatsSet = new Set(ov.global?.hiddenCats || []);
+                const totalComps = COMPS.length;
+                const visibleComps = COMPS.filter(
+                    (c) =>
+                        !hiddenSet.has(c.slug) &&
+                        !hiddenCatsSet.has(c.category),
+                ).length;
+                const totalCats = new Set(COMPS.map((c) => c.category)).size;
+                const visibleCats = new Set(
+                    COMPS.filter((c) => !hiddenCatsSet.has(c.category)).map(
+                        (c) => c.category,
+                    ),
+                ).size;
+                const compCount = document.getElementById("sg-comp-count");
+                if (compCount) {
+                    if (visibleComps < totalComps) {
+                        compCount.textContent = `${visibleComps} / ${totalComps} components`;
+                    } else {
+                        compCount.textContent = `${totalComps} component${totalComps !== 1 ? "s" : ""}`;
+                    }
+                }
+                const catCount = document.getElementById("sg-count-cats");
+                if (catCount) {
+                    if (visibleCats < totalCats) {
+                        catCount.textContent = `${visibleCats} / ${totalCats} categories`;
+                    } else {
+                        catCount.textContent = `${totalCats} categor${totalCats !== 1 ? "ies" : "y"}`;
+                    }
+                }
+                document
+                    .querySelectorAll("a.sg-viewall-card")
+                    .forEach((card) => {
+                        const cat = card.dataset.category;
+                        const catMeta = card.querySelector(".cat-layout");
+                        if (!cat || !catMeta) return;
+                        const catKey =
+                            "category:" + encodeURIComponent(cat).toLowerCase();
+                        const catOv = ov.components?.[catKey] || {};
+                        const globalOv = ov.global || {};
+                        const effLayout = catOv.layout || globalOv.layout || "";
+                        if (effLayout && LAYOUTS[effLayout]) {
+                            const isDefault = effLayout === defaultLayout;
+                            const layoutFile = isDefault
+                                ? "Default Layout"
+                                : LAYOUTS[effLayout].split("/").pop() ||
+                                  effLayout;
+                            catMeta.textContent = "\u229e " + layoutFile;
+                            catMeta.classList.remove("card-no-layout");
+                        } else {
+                            const compsInCat = COMPS.filter(
+                                (c) =>
+                                    c.category.toLowerCase() ===
+                                    cat.toLowerCase(),
+                            );
+                            const firstComp = compsInCat[0];
+                            const fallbackKey = firstComp
+                                ? firstComp.layoutKey
+                                : "";
+                            if (fallbackKey && LAYOUTS[fallbackKey]) {
+                                const isDefault = fallbackKey === defaultLayout;
+                                catMeta.textContent =
+                                    "\u229e " +
+                                    (isDefault
+                                        ? "Default Layout"
+                                        : LAYOUTS[fallbackKey]
+                                              .split("/")
+                                              .pop() || fallbackKey);
+                                catMeta.classList.remove("card-no-layout");
+                            } else {
+                                catMeta.textContent = "— auto —";
+                                catMeta.classList.add("card-no-layout");
+                            }
+                        }
+                    });
+                const input = document.getElementById("sg-search");
+                if (input) input.dispatchEvent(new Event("input"));
+            }
+            const modal = document.getElementById("sg-modal");
+            const titleEl = document.getElementById("sg-modal-title");
+            const layoutSel = document.getElementById("sg-modal-layout");
+            const propsTa = document.getElementById("sg-modal-props");
+            const propsErr = document.getElementById("sg-props-error");
+            let currentSlug = null;
+            function openModal(slug) {
+                currentSlug = slug;
+                const ov = getOv();
+                const entry = slug
+                    ? ov.components?.[slug] || {}
+                    : ov.global || {};
+                const visSec = document.getElementById("sg-visibility-section");
+                if (!slug) {
+                    visSec.style.display = "flex";
+                    const listEl =
+                        document.getElementById("sg-visibility-list");
+                    const hiddenSet = new Set(ov.global?.hidden || []);
+
+                    const cats = {};
+                    COMPS.forEach((c) => {
+                        if (!cats[c.category]) cats[c.category] = [];
+                        cats[c.category].push(c);
+                    });
+
+                    const hiddenCatsSet = new Set(ov.global?.hiddenCats || []);
+
+                    let html = "";
+                    Object.keys(cats)
+                        .sort()
+                        .forEach((catName) => {
+                            const catChecked = !hiddenCatsSet.has(catName);
+                            const catCheckedAttr = catChecked ? "checked" : "";
+                            html += `<div class="sg-visibility-group">`;
+                            html += `<label class="sg-visibility-cat"><input type="checkbox" class="cat-toggle" value="${catName}" ${catCheckedAttr}> ${catName}</label>`;
+                            html += `<div class="sg-visibility-items" style="${catChecked ? "" : "display:none;"}">`;
+                            cats[catName].forEach((c) => {
+                                const checked = !hiddenSet.has(c.slug)
+                                    ? "checked"
+                                    : "";
+                                html += `<label class="sg-visibility-item"><input type="checkbox" class="comp-toggle" value="${c.slug}" ${checked}> ${c.name}</label>`;
+                            });
+                            html += `</div></div>`;
+                        });
+                    listEl.innerHTML = html;
+
+                    const visSearch = document.getElementById(
+                        "sg-visibility-search",
+                    );
+                    if (visSearch) {
+                        visSearch.value = "";
+                        visSearch.oninput = (e) => {
+                            const q = e.target.value.toLowerCase();
+                            listEl
+                                .querySelectorAll(".sg-visibility-group")
+                                .forEach((group) => {
+                                    const catName = group
+                                        .querySelector(".cat-toggle")
+                                        .value.toLowerCase();
+                                    const items = Array.from(
+                                        group.querySelectorAll(
+                                            ".sg-visibility-item",
+                                        ),
+                                    );
+                                    let hasMatch = catName.includes(q);
+                                    items.forEach((item) => {
+                                        const compName =
+                                            item.textContent.toLowerCase();
+                                        const match =
+                                            compName.includes(q) ||
+                                            catName.includes(q);
+                                        item.style.display = match
+                                            ? "flex"
+                                            : "none";
+                                        if (match) hasMatch = true;
+                                    });
+                                    group.style.display = hasMatch
+                                        ? "flex"
+                                        : "none";
+                                });
+                        };
+                    }
+                    listEl.querySelectorAll(".cat-toggle").forEach((chk) => {
+                        chk.addEventListener("change", (e) => {
+                            const group = e.target.closest(
+                                ".sg-visibility-group",
+                            );
+                            const itemsBlock = group.querySelector(
+                                ".sg-visibility-items",
+                            );
+
+                            if (e.target.checked)
+                                itemsBlock.style.display = "flex";
+                            else itemsBlock.style.display = "none";
+                        });
+                    });
+                } else {
+                    visSec.style.display = "none";
+                }
+
+                titleEl.textContent = slug ? `Override: ${slug}` : "Settings";
+                layoutSel.value = entry.layout || "";
+                propsTa.value = entry.props
+                    ? JSON.stringify(entry.props, null, 2)
+                    : "";
+                propsErr.style.display = "none";
+                modal.showModal();
+                const scrollY = window.scrollY;
+                document.body.style.cssText = `overflow:hidden;position:fixed;top:-${scrollY}px;left:0;right:0;`;
+                propsTa.focus();
+            }
+            function closeModal() {
+                const scrollY = Math.abs(
+                    parseInt(document.body.style.top || "0", 10),
+                );
+                document.body.style.cssText = "";
+                window.scrollTo(0, scrollY);
+                modal.close();
+            }
+            document.getElementById("sg-modal-close").onclick = closeModal;
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) closeModal();
+            });
+            window.addEventListener(
+                "wheel",
+                (e) => {
+                    if (!modal.open) return;
+                    e.preventDefault();
+                    const bodyEl = modal.querySelector(".sg-modal-body");
+                    if (bodyEl) bodyEl.scrollTop += e.deltaY;
+                },
+                { passive: false },
+            );
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && modal.open) closeModal();
+            });
+            document.getElementById("sg-modal-save").onclick = () => {
+                let props = {};
+                const raw = propsTa.value.trim();
+                if (raw) {
+                    try {
+                        props = JSON.parse(raw);
+                        propsErr.style.display = "none";
+                    } catch {
+                        propsErr.style.display = "";
+                        return;
+                    }
+                }
+                const layout = layoutSel.value;
+                const ov = getOv();
+
+                if (currentSlug) {
+                    if (!ov.components) ov.components = {};
+                    const target = ov.components[currentSlug] || {};
+                    if (layout) target.layout = layout;
+                    else delete target.layout;
+                    if (Object.keys(props).length > 0) target.props = props;
+                    else delete target.props;
+
+                    if (Object.keys(target).length > 0)
+                        ov.components[currentSlug] = target;
+                    else delete ov.components[currentSlug];
+                } else {
+                    const target = ov.global || {};
+                    if (layout) target.layout = layout;
+                    else delete target.layout;
+                    if (Object.keys(props).length > 0) target.props = props;
+                    else delete target.props;
+
+                    const visSec = document.getElementById(
+                        "sg-visibility-section",
+                    );
+                    if (visSec && visSec.style.display !== "none") {
+                        target.hiddenCats = Array.from(
+                            document.querySelectorAll(
+                                ".cat-toggle:not(:checked)",
+                            ),
+                        ).map((c) => c.value);
+                        target.hidden = Array.from(
+                            document.querySelectorAll(
+                                ".comp-toggle:not(:checked)",
+                            ),
+                        ).map((c) => c.value);
+                    }
+
+                    if (Object.keys(target).length > 0) ov.global = target;
+                    else delete ov.global;
+                }
+                setOv(ov);
+                closeModal();
+                refreshUI();
+            };
+            document.getElementById("sg-modal-reset").onclick = () => {
+                layoutSel.value = "";
+                propsTa.value = "";
+                propsErr.style.display = "none";
+            };
+            document.querySelectorAll(".sg-edit-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openModal(btn.dataset.slug);
+                });
+            });
+            document.querySelectorAll(".sg-cat-setting-btn").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openModal("category:" + btn.dataset.category);
+                });
+            });
+            document
+                .getElementById("sg-global-btn")
+                .addEventListener("click", () => openModal(null));
+            const input = document.getElementById("sg-search");
+            const noResults = document.getElementById("sg-no-results");
+            if (input) {
+                document.addEventListener("keydown", (e) => {
+                    if (
+                        e.key === "/" &&
+                        document.activeElement !== input &&
+                        !modal.open
+                    ) {
+                        e.preventDefault();
+                        input.focus();
+                    }
+                    if (e.key === "Escape" && !modal.open) {
+                        input.value = "";
+                        input.dispatchEvent(new Event("input"));
+                        input.blur();
+                    }
+                });
+                input.addEventListener("input", () => {
+                    const query = input.value.toLowerCase().trim();
+                    const groups = document.querySelectorAll(".sg-group");
+                    const ov = getOv();
+                    const hiddenSet = new Set(ov.global?.hidden || []);
+                    const hiddenCatsSet = new Set(ov.global?.hiddenCats || []);
+                    let totalVisible = 0;
+                    groups.forEach((group) => {
+                        const cat = group.dataset.category?.toLowerCase() || "";
+                        const isCatHidden = hiddenCatsSet.has(
+                            group.dataset.category || "",
+                        );
+                        let groupVisible = 0;
+                        group.querySelectorAll(".sg-card").forEach((card) => {
+                            const name = card.dataset.name || "";
+                            const slug = card.dataset.slug || "";
+                            const isHidden = hiddenSet.has(slug);
+                            const effectivelyHidden = isCatHidden || isHidden;
+                            const matchesSearch =
+                                !query ||
+                                name.includes(query) ||
+                                cat.includes(query);
+                            const show = matchesSearch && !effectivelyHidden;
+                            card.style.display = show ? "" : "none";
+                            if (show) groupVisible++;
+                        });
+                        const catMatchesSearch = !query || cat.includes(query);
+                        const groupShouldBeVisible = !isCatHidden && (groupVisible > 0 || catMatchesSearch);
+                        const viewAllCard =
+                            group.querySelector(".sg-viewall-card");
+                        if (viewAllCard)
+                            viewAllCard.style.display = (!isCatHidden && catMatchesSearch)
+                                ? ""
+                                : "none";
+                        group.hidden = !groupShouldBeVisible;
+                        const title = group.querySelector(".category-title");
+                        if (title)
+                            title.style.display = groupShouldBeVisible
+                                ? ""
+                                : "none";
+                        totalVisible += groupVisible;
+                    });
+                    if (noResults)
+                        noResults.style.display =
+                            query && totalVisible === 0 ? "block" : "none";
+                });
+            }
+            refreshUI();
+            (function () {
+                var btn = document.getElementById("sg-mode-info-btn");
+                var tip = document.getElementById("sg-mode-tip");
+                if (!btn || !tip) return;
+                btn.addEventListener("mouseenter", function () {
+                    var r = btn.getBoundingClientRect();
+                    tip.style.top = r.bottom + window.scrollY + 8 + "px";
+                    tip.style.left =
+                        Math.max(8, r.left + r.width / 2 - 150) + "px";
+                    tip.classList.add("visible");
+                });
+                btn.addEventListener("mouseleave", function () {
+                    tip.classList.remove("visible");
+                });
+            })();
+            (function () {
+                var cardTip = document.getElementById("sg-card-tip");
+                if (!cardTip) return;
+                var tipContent = {
+                    "no-layout":
+                        "<strong>No Layout</strong>Global CSS and fonts won't load in this preview. Fix: set <code>defaultLayout</code> in your config, or add <code>layout: 'key'</code> to this component.",
+                    overridden:
+                        "<strong>Overridden</strong>This component has an active override saved in your browser (custom props or layout). Click <code>✎</code> \u2192 <strong>Reset to Config</strong> to remove it.",
+                };
+                document.querySelectorAll("[data-tip]").forEach(function (el) {
+                    el.addEventListener("mouseenter", function (e) {
+                        e.stopPropagation();
+                        var content = tipContent[el.dataset.tip];
+                        if (!content) return;
+                        cardTip.innerHTML = content;
+                        var r = el.getBoundingClientRect();
+                        cardTip.style.top =
+                            r.bottom + window.scrollY + 6 + "px";
+                        cardTip.style.left =
+                            Math.max(8, r.left + r.width / 2 - 140) + "px";
+                        cardTip.classList.add("visible");
+                    });
+                    el.addEventListener("mouseleave", function () {
+                        cardTip.classList.remove("visible");
+                    });
+                });
+            })();
+            function delay(ms) {
+                return new Promise((r) => setTimeout(r, ms));
+            }
+            async function runEntrance() {
+                await delay(60);
+                const wordmark = document.querySelector(".sg-anim-wordmark");
+                if (wordmark) wordmark.classList.add("go");
+                await delay(120);
+                const searchWrap = document.querySelector(
+                    ".search-wrap.sg-anim-search",
+                );
+                const searchInput = document.getElementById("sg-search");
+                if (searchWrap) {
+                    searchWrap.classList.add("go");
+                    if (searchInput) {
+                        (async () => {
+                            await delay(350);
+                            const fullText = "search components...";
+                            searchInput.placeholder = "";
+                            for (let i = 0; i <= fullText.length; i++) {
+                                searchInput.placeholder =
+                                    fullText.slice(0, i) +
+                                    (i < fullText.length ? "▌" : "");
+                                await delay(38);
+                            }
+                            searchInput.placeholder = "search components...";
+                        })();
+                    }
+                }
+                await delay(140);
+                document
+                    .querySelectorAll(".sg-anim-status")
+                    .forEach((el) => el.classList.add("go"));
+                await delay(200);
+                const h1 = document.querySelector(".sg-anim-title");
+                if (h1) h1.classList.add("go");
+                await delay(130);
+                const subs = document.querySelectorAll(".sg-anim-sub");
+                subs.forEach((sub) => sub.classList.add("go"));
+                await delay(400);
+                const revealObserver = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach((entry) => {
+                            if (!entry.isIntersecting) return;
+                            const group = entry.target;
+                            const tw = group.querySelector(
+                                ".category-title-wrapper",
+                            );
+                            if (tw) tw.classList.add("go");
+                            const allCards = group.querySelectorAll(
+                                ".sg-card, .sg-viewall-card",
+                            );
+                            allCards.forEach((card, i) => {
+                                setTimeout(
+                                    () => card.classList.add("go"),
+                                    60 + i * 45,
+                                );
+                            });
+                            revealObserver.unobserve(group);
+                        });
+                    },
+                    { threshold: 0.01, rootMargin: "0px" },
+                );
+                document
+                    .querySelectorAll(".sg-group")
+                    .forEach((g) => revealObserver.observe(g));
+            }
+            (function initSmoothScroll() {
+                let target = window.scrollY;
+                let current = window.scrollY;
+                const LERP = 0.065;
+                let running = false;
+                function maxScroll() {
+                    return Math.max(
+                        0,
+                        document.documentElement.scrollHeight -
+                            window.innerHeight,
+                    );
+                }
+                function tick() {
+                    const diff = target - current;
+                    if (Math.abs(diff) > 0.12) {
+                        current += diff * LERP;
+                        window.scrollTo(0, current);
+                        requestAnimationFrame(tick);
+                    } else {
+                        current = target;
+                        window.scrollTo(0, current);
+                        running = false;
+                    }
+                }
+                function start() {
+                    if (running) return;
+                    running = true;
+                    requestAnimationFrame(tick);
+                }
+                window.addEventListener(
+                    "wheel",
+                    (e) => {
+                        e.preventDefault();
+                        const delta =
+                            e.deltaMode === 1
+                                ? e.deltaY * 32
+                                : e.deltaMode === 2
+                                  ? e.deltaY * window.innerHeight
+                                  : e.deltaY;
+                        target = Math.max(
+                            0,
+                            Math.min(target + delta, maxScroll()),
+                        );
+                        start();
+                    },
+                    { passive: false },
+                );
+                window.addEventListener("keydown", () => {
+                    setTimeout(() => {
+                        const y = window.scrollY;
+                        if (Math.abs(y - current) > 5) {
+                            target = y;
+                            current = y;
+                        }
+                    }, 16);
+                });
+                window.sgScrollTo = (y) => {
+                    target = Math.max(0, Math.min(y, maxScroll()));
+                    start();
+                };
+                const btn = document.getElementById("sg-back-top");
+                if (btn) {
+                    window.addEventListener(
+                        "scroll",
+                        () => {
+                            btn.classList.toggle(
+                                "visible",
+                                window.scrollY > 400,
+                            );
+                        },
+                        { passive: true },
+                    );
+                    btn.addEventListener("click", () => window.sgScrollTo(0));
+                }
+            })();
+            runEntrance().then(() => {
+                function scrollToHash(hash) {
+                    const h = hash || window.location.hash;
+                    if (!h) return;
+                    const el = document.querySelector(h);
+                    if (!el) return;
+                    setTimeout(() => {
+                        const rect = el.getBoundingClientRect();
+                        const center = (window.innerHeight - rect.height) / 2;
+                        window.sgScrollTo(
+                            window.scrollY + rect.top - Math.max(center, 80),
+                        );
+                    }, 120);
+                }
+                scrollToHash();
+                window.addEventListener("hashchange", () =>
+                    scrollToHash(window.location.hash),
+                );
+            });
+
+            (function initTheme() {
+                function setTheme(theme) {
+                    document.documentElement.setAttribute("data-theme", theme);
+                    localStorage.setItem("stargazer-theme", theme);
+                    localStorage.setItem("sg-theme", theme);
+                    document.querySelectorAll(".sg-theme-btn").forEach((b) => {
+                        if (b.getAttribute("data-theme") === theme) {
+                            b.classList.add("active");
+                        } else {
+                            b.classList.remove("active");
+                        }
+                    });
+                }
+                const savedTheme =
+                    localStorage.getItem("sg-theme") ||
+                    localStorage.getItem("stargazer-theme");
+                const prefersLight =
+                    window.matchMedia &&
+                    window.matchMedia("(prefers-color-scheme: light)").matches;
+                setTheme(savedTheme || (prefersLight ? "light" : "dark"));
+                window.setTheme = setTheme;
+
+                window.addEventListener("storage", (e) => {
+                    if (e.key === "stargazer-theme" && e.newValue) {
+                        setTheme(e.newValue);
+                    }
+                });
+
+                document.querySelectorAll(".sg-theme-btn").forEach((btn) => {
+                    btn.addEventListener("click", (e) => {
+                        setTheme(e.currentTarget.getAttribute("data-theme"));
+                    });
+                });
+            })();
+        </script>
+    </body>
+</html>

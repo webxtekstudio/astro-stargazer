@@ -1,0 +1,17 @@
+# Development files — not included in published package
+node_modules/
+dist/
+.git/
+.gitignore
+
+# Config files
+tsconfig.json
+*.config.ts.example
+
+# Docs that don't need to ship
+CHANGELOG.md
+
+# IDE
+.vscode/
+.idea/
+*.DS_Store

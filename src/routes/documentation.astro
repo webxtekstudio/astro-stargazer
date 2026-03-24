@@ -1,0 +1,2802 @@
+---
+export const prerender = false;
+
+
+const configRes = await fetch(new URL("/__stargazer/registry.json", Astro.url));
+const data = await configRes.json();
+const basePath: string = data.config?.base || "/stargazer";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stargazer — Documentation</title>
+    <link
+      rel="icon"
+      id="sg-favicon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9' stroke='%23DDF160' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+    />
+    <script>
+      (function () {
+        try {
+          var canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 64;
+          var ctx = canvas.getContext("2d");
+          if (!ctx || typeof Path2D === "undefined") return;
+          var link = document.getElementById("sg-favicon");
+          if (!link) return;
+          var path = new Path2D(
+            "M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9",
+          );
+          var t = 0;
+          setInterval(function () {
+            t += 0.06;
+            var p = 0.72 + 0.28 * Math.sin(t);
+            ctx!.clearRect(0, 0, 64, 64);
+            ctx!.save();
+            ctx!.scale(64 / 24, 64 / 24);
+            ctx!.shadowColor = "#DDF160";
+            ctx!.shadowBlur = 4 * p;
+            ctx!.strokeStyle = "rgba(221,241,96," + p + ")";
+            ctx!.lineWidth = 2;
+            ctx!.lineCap = "round";
+            ctx!.lineJoin = "round";
+            ctx!.stroke(path);
+            ctx!.restore();
+            (link as HTMLLinkElement).href = canvas.toDataURL();
+          }, 60);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Orbitron:wght@400..900&display=swap"
+      rel="stylesheet"
+    />
+    <style is:global>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-accent);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-accent) var(--bg-primary);
+      }
+
+      :root {
+        --sg-accent: #ddf160;
+        --sg-bg: #08081a;
+        --sg-bg-mid: #0f0f24;
+        --bg-primary: #08081a;
+        --bg-secondary: #0f0f24;
+        --bg-card: #131328;
+        --bg-code: #131328;
+        --border: rgba(221, 241, 96, 0.15);
+        --border-accent: rgba(221, 241, 96, 0.3);
+        --accent: #ddf160;
+        --accent-dim: rgba(221, 241, 96, 0.15);
+        --text-primary: rgba(255, 255, 255, 0.95);
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --search-bg: rgba(255, 255, 255, 0.04);
+        --group-bg: rgba(255, 255, 255, 0.04);
+        --btn-hover-bg: rgba(255, 255, 255, 0.08);
+        --sidebar-width: 260px;
+        --header-height: 52px;
+        --font-body: "JetBrains Mono", "Courier New", monospace;
+        --font-mono: "JetBrains Mono", monospace;
+        --font-ui: "Orbitron", monospace;
+      }
+
+      html[data-theme="light"] {
+        --sg-bg: #f8f9fa;
+        --sg-bg-mid: #ffffff;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f4f5f7;
+        --bg-card: #ffffff;
+        --bg-code: #f0f1f4;
+        --border: rgba(0, 0, 0, 0.1);
+        --border-accent: rgba(146, 163, 0, 0.3);
+        --accent: #8a9600;
+        --accent-dim: rgba(146, 163, 0, 0.1);
+        --text-primary: rgba(0, 0, 0, 0.9);
+        --text-secondary: rgba(0, 0, 0, 0.65);
+        --text-muted: rgba(0, 0, 0, 0.45);
+        --search-bg: rgba(0, 0, 0, 0.04);
+        --group-bg: rgba(0, 0, 0, 0.04);
+        --btn-hover-bg: rgba(0, 0, 0, 0.08);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--font-body);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.7;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(221, 241, 96, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(221, 241, 96, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      html[data-theme="light"] body::before {
+        background-image:
+          linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+      }
+
+      a.fw-link {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(221, 241, 96, 0.2);
+        transition: border-color 0.2s;
+      }
+      a.fw-link:hover {
+        border-bottom-color: var(--accent);
+      }
+
+      .docs-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: var(--header-height);
+        background: rgba(8, 8, 26, 0.55);
+        backdrop-filter: blur(16px) saturate(1.4);
+        -webkit-backdrop-filter: blur(16px) saturate(1.4);
+        border-bottom: none;
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        z-index: 100;
+        gap: 16px;
+        animation: docsNavSlideDown 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      html[data-theme="light"] .docs-header {
+        background: rgba(255, 255, 255, 0.55);
+      }
+      @keyframes docsNavSlideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .docs-search-wrap {
+        margin-left: auto;
+        width: 280px;
+        position: relative;
+      }
+      .docs-search-input {
+        width: 100%;
+        background: var(--search-bg);
+        border: 1px solid var(--border-accent);
+        border-radius: 3px;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        padding: 10px 16px 10px 34px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .docs-search-input::placeholder {
+        color: var(--text-muted);
+      }
+      .docs-search-input:focus {
+        border-color: var(--accent);
+      }
+      .docs-search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        color: var(--text-muted);
+        pointer-events: none;
+      }
+      .docs-search-slash {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 700;
+        pointer-events: none;
+      }
+      .docs-search-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-accent);
+        border-radius: 6px;
+        max-height: 320px;
+        overflow-y: auto;
+        z-index: 200;
+        padding: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .docs-search-dropdown.open {
+        display: block;
+      }
+      .docs-search-wrap .docs-search-item {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 12px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 13px;
+        font-family: var(--font-body);
+        border-radius: 4px;
+        transition:
+          background 0.1s,
+          color 0.1s;
+        border-bottom: none;
+      }
+      .docs-search-wrap .docs-search-item:hover,
+      .docs-search-wrap .docs-search-item.highlight {
+        background: var(--btn-hover-bg);
+        color: var(--accent);
+        border-bottom-color: transparent;
+      }
+      .docs-search-item-section {
+        font-family: var(--font-ui);
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 4px;
+      }
+      .docs-header-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transition: color 0.15s;
+      }
+      .docs-header-back:hover {
+        color: var(--accent);
+      }
+      .docs-header-title {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        text-transform: uppercase;
+      }
+
+      .sg-btn-group {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--group-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 3px;
+        flex-shrink: 0;
+      }
+      .sg-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 5px 9px;
+        border-radius: 2px;
+        font-size: 11px;
+        line-height: 1;
+        color: var(--text-muted);
+        transition:
+          background 0.15s,
+          color 0.15s;
+        font-family: var(--font-mono);
+        white-space: nowrap;
+        text-transform: uppercase;
+      }
+      .sg-btn:hover {
+        color: var(--text-primary);
+        background: var(--btn-hover-bg);
+      }
+      .sg-theme-btn.active {
+        background: var(--accent);
+        color: var(--bg-primary);
+      }
+      .sg-btn-icon {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+        display: block;
+      }
+      .sg-btn-icon path,
+      .sg-btn-icon rect,
+      .sg-btn-icon circle {
+        stroke: currentColor;
+        fill: none;
+      }
+      .sg-btn-icon.sg-icon-fill path {
+        fill: currentColor;
+        stroke: none;
+      }
+
+      .scroll-up-btn {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.2s,
+          background 0.2s,
+          color 0.2s,
+          transform 0.2s;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .scroll-up-btn.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .scroll-up-btn:hover {
+        background: var(--bg-card);
+        color: var(--accent);
+        border-color: var(--border-accent);
+        transform: translateY(-2px);
+      }
+
+      .header-sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+      }
+
+      .docs-sidebar {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        padding: 20px 0;
+        z-index: 50;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-accent) transparent;
+      }
+      .docs-sidebar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .docs-sidebar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .docs-sidebar::-webkit-scrollbar-thumb {
+        background: var(--border-accent);
+        border-radius: 4px;
+      }
+
+      .sidebar-section-title {
+        font-family: var(--font-ui);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 16px 20px 6px;
+      }
+      .sidebar-section-title:first-child {
+        padding-top: 4px;
+      }
+
+      .sidebar-link {
+        display: block;
+        padding: 5px 20px 5px 28px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 450;
+        transition:
+          color 0.12s,
+          background 0.12s,
+          border-color 0.12s;
+        border-left: 2px solid transparent;
+      }
+      .sidebar-link:hover {
+        color: var(--text-primary);
+        background: var(--btn-hover-bg);
+      }
+      .sidebar-link.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+        background: var(--accent-dim);
+      }
+
+      .sidebar-toggle {
+        display: none;
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .docs-content {
+        margin-left: var(--sidebar-width);
+        margin-top: var(--header-height);
+        padding: 40px 48px 80px;
+        max-width: calc(100vw - var(--sidebar-width));
+      }
+
+      .docs-content h1 {
+        font-family: var(--font-ui);
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 8px;
+        letter-spacing: 0.04em;
+      }
+      .docs-content .subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 40px;
+        line-height: 1.6;
+      }
+
+      .docs-content h2 {
+        font-family: var(--font-ui);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-top: 56px;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        scroll-margin-top: calc(var(--header-height) + 20px);
+      }
+
+      .docs-content h3 {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-top: 32px;
+        margin-bottom: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        scroll-margin-top: calc(var(--header-height) + 20px);
+      }
+
+      .docs-content h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-top: 20px;
+        margin-bottom: 8px;
+      }
+
+      .docs-content p {
+        margin-bottom: 16px;
+        color: var(--text-secondary);
+      }
+
+      .docs-content strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      .docs-content em {
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+
+      .docs-content a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s;
+      }
+      .docs-content a:hover {
+        border-bottom-color: var(--accent);
+      }
+
+      .docs-content ul,
+      .docs-content ol {
+        margin-bottom: 16px;
+        padding-left: 24px;
+      }
+      .docs-content li {
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+      }
+      .docs-content li strong {
+        color: var(--text-primary);
+      }
+
+      .docs-content code {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        background: rgba(221, 241, 96, 0.08);
+        color: var(--accent);
+        padding: 2px 7px;
+        border-radius: 4px;
+        border: 1px solid rgba(221, 241, 96, 0.18);
+      }
+      .docs-pre-wrapper {
+        position: relative;
+        margin-bottom: 24px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border-accent);
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+        isolation: isolate;
+        resize: both;
+        width: 65%;
+        min-width: 340px;
+        max-width: 100%;
+        min-height: 60px;
+      }
+      .docs-pre-wrapper:hover {
+        border-color: var(--accent);
+        box-shadow:
+          0 0 0 1px rgba(221, 241, 96, 0.15),
+          0 4px 20px rgba(0, 0, 0, 0.35);
+      }
+      .docs-pre-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 14px;
+        background: rgba(221, 241, 96, 0.04);
+        border-bottom: 1px solid var(--border-accent);
+        gap: 8px;
+      }
+      .docs-pre-lang {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        opacity: 0.7;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .docs-pre-lang::before {
+        content: "{ }";
+        font-size: 11px;
+        opacity: 0.9;
+      }
+      .docs-pre-wrapper pre {
+        background: #080818;
+        padding: 18px 20px;
+        margin: 0;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(221, 241, 96, 0.15) transparent;
+      }
+      .docs-pre-wrapper .copy-btn {
+        padding: 4px 10px;
+        background: transparent;
+        border: 1px solid rgba(221, 241, 96, 0.2);
+        color: rgba(255, 255, 255, 0.4);
+        border-radius: 4px;
+        cursor: pointer;
+        transition:
+          color 0.2s,
+          border-color 0.2s,
+          background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        font-family: var(--font-mono);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        pointer-events: all;
+        flex-shrink: 0;
+      }
+      .docs-pre-wrapper .copy-btn:hover {
+        color: var(--accent);
+        border-color: rgba(221, 241, 96, 0.5);
+        background: rgba(221, 241, 96, 0.06);
+      }
+      .docs-pre-wrapper .copy-btn.copied {
+        color: #080818;
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .docs-pre-wrapper .copy-btn svg {
+        width: 12px;
+        height: 12px;
+      }
+      .docs-content pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #c8d3e8;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .tok-keyword {
+        color: #c792ea;
+        font-style: italic;
+      }
+      .tok-string {
+        color: #89ddff;
+      }
+      .tok-comment {
+        color: #546e7a;
+        font-style: italic;
+      }
+      .tok-number {
+        color: #f78c6c;
+      }
+      .tok-boolean {
+        color: #ff9d00;
+      }
+      .tok-type {
+        color: #ffcb6b;
+      }
+      .tok-prop {
+        color: #82aaff;
+      }
+      .tok-punctuation {
+        color: rgba(200, 211, 232, 0.5);
+      }
+      html[data-theme="light"] .docs-pre-wrapper pre {
+        background: #1e1e2e;
+      }
+      html[data-theme="light"] .docs-pre-wrapper .copy-btn {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      html[data-theme="light"] .docs-pre-header {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .docs-content .table-scroll {
+        overflow-x: auto;
+        margin-bottom: 20px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(221, 241, 96, 0.2) transparent;
+      }
+      .docs-content table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .docs-content th {
+        text-align: left;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-secondary);
+      }
+      .docs-content td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-secondary);
+      }
+      .docs-content tr:nth-child(even) td {
+        background: var(--group-bg);
+      }
+      .docs-content td code {
+        font-size: 12px;
+      }
+
+      .docs-content blockquote {
+        border-left: 3px solid var(--accent);
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        background: var(--accent-dim);
+        border-radius: 0 6px 6px 0;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+      }
+      .docs-content blockquote p {
+        margin-bottom: 0;
+        color: var(--text-secondary);
+        overflow-wrap: anywhere;
+      }
+      .docs-content blockquote p:last-child {
+        margin-bottom: 0;
+      }
+
+      .docs-content hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 48px 0;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar-toggle {
+          display: block;
+        }
+        .docs-sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+        }
+        .docs-sidebar.open {
+          transform: translateX(0);
+        }
+        .docs-content {
+          margin-left: 0;
+          padding: 28px 20px 60px;
+        }
+      }
+
+      @keyframes docsSlideUp {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes docsFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .docs-sidebar {
+        animation: docsFadeIn 0.35s ease both;
+      }
+      .docs-content {
+        animation: docsSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="docs-header">
+      <button
+        class="sidebar-toggle"
+        id="sidebar-toggle"
+        aria-label="Toggle navigation">☰</button
+      >
+      <a href={basePath} class="docs-header-back">← Observatory</a>
+      <div class="header-sep"></div>
+      <span class="docs-header-title">Documentation</span>
+      <div class="docs-search-wrap">
+        <span class="docs-search-slash">/</span>
+        <input
+          class="docs-search-input"
+          id="docs-search"
+          type="text"
+          placeholder="search docs..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="docs-search-dropdown" id="docs-search-dropdown"></div>
+      </div>
+      <div class="header-sep"></div>
+      <div class="sg-btn-group sg-theme-group">
+        <button
+          class="sg-btn sg-theme-btn"
+          data-theme="dark"
+          onclick="setTheme('dark')"
+          aria-label="Dark Mode"
+        >
+          <svg
+            class="sg-btn-icon sg-icon-fill"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            ><path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M3.39703 11.6315C3.39703 16.602 7.42647 20.6315 12.397 20.6315C15.6858 20.6315 18.5656 18.8664 20.1358 16.23C16.7285 17.3289 12.6922 16.7548 9.98282 14.0455C7.25201 11.3146 6.72603 7.28415 7.86703 3.89293C5.20697 5.47927 3.39703 8.38932 3.39703 11.6315ZM21.187 13.5851C22.0125 13.1021 23.255 13.6488 23 14.5706C21.7144 19.2187 17.4543 22.6315 12.397 22.6315C6.3219 22.6315 1.39703 17.7066 1.39703 11.6315C1.39703 6.58874 4.93533 2.25845 9.61528 0.999986C10.5393 0.751502 11.0645 1.99378 10.5641 2.80935C8.70026 5.84656 8.83194 10.0661 11.397 12.6312C13.9319 15.1662 18.1365 15.3702 21.187 13.5851Z"
+            ></path></svg
+          >
+          DARK
+        </button>
+        <button
+          class="sg-btn sg-theme-btn"
+          data-theme="light"
+          onclick="setTheme('light')"
+          aria-label="Light Mode"
+        >
+          <svg
+            class="sg-btn-icon sg-icon-fill"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            ><path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 18A6 6 0 1 0 12 6a6 6 0 0 0 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"
+            ></path></svg
+          >
+          LIGHT
+        </button>
+      </div>
+    </header>
+
+    <nav class="docs-sidebar" id="docs-sidebar">
+      <div class="sidebar-section-title">Getting Started</div>
+      <a class="sidebar-link" href="#why">Why Stargazer?</a>
+      <a class="sidebar-link" href="#inspired">Inspired By</a>
+      <a class="sidebar-link" href="#comparison">Comparison</a>
+      <a class="sidebar-link" href="#requirements">Requirements</a>
+
+      <div class="sidebar-section-title">Installation</div>
+      <a class="sidebar-link" href="#install">Install</a>
+      <a class="sidebar-link" href="#config-setup">Config Setup</a>
+      <a class="sidebar-link" href="#run">Run</a>
+
+      <div class="sidebar-section-title">Configuration</div>
+      <a class="sidebar-link" href="#config-reference">Config Reference</a>
+      <a class="sidebar-link" href="#component-entry">Component Entry</a>
+      <a class="sidebar-link" href="#variant-entry">Variant Entry</a>
+      <a class="sidebar-link" href="#modes">Modes</a>
+      <a class="sidebar-link" href="#recipes">Recipes</a>
+
+      <div class="sidebar-section-title">Features</div>
+      <a class="sidebar-link" href="#variants">Variants</a>
+      <a class="sidebar-link" href="#props-inheritance">Props Inheritance</a>
+      <a class="sidebar-link" href="#layout-wrapping">Layout Wrapping</a>
+      <a class="sidebar-link" href="#override-editor">Override Editor</a>
+      <a class="sidebar-link" href="#css-styles">CSS &amp; Styles</a>
+      <a class="sidebar-link" href="#viewport-zoom">Viewport &amp; Zoom</a>
+      <a class="sidebar-link" href="#dark-mode">Dark Mode</a>
+      <a class="sidebar-link" href="#search">Search</a>
+      <a class="sidebar-link" href="#category-view-all">Category View All</a>
+      <a class="sidebar-link" href="#keyboard-shortcuts">Keyboard Shortcuts</a>
+      <a class="sidebar-link" href="#copy-props">Copy Props</a>
+      <a class="sidebar-link" href="#url-state">URL State</a>
+      <a class="sidebar-link" href="#hot-reload">Hot Reload</a>
+      <a class="sidebar-link" href="#error-boundary">Error Boundary</a>
+
+      <div class="sidebar-section-title">Advanced</div>
+      <a class="sidebar-link" href="#architecture">Architecture</a>
+
+      <div class="sidebar-section-title">Compatibility</div>
+      <a class="sidebar-link" href="#platform">Platform</a>
+      <a class="sidebar-link" href="#framework">Framework</a>
+
+      <div class="sidebar-section-title">Community</div>
+      <a class="sidebar-link" href="#contributing">Contributing</a>
+      <a class="sidebar-link" href="#roadmap">Roadmap</a>
+
+      <div class="sidebar-section-title">Help</div>
+      <a class="sidebar-link" href="#troubleshooting">Troubleshooting</a>
+    </nav>
+
+    <main class="docs-content">
+      <h1 style="display:flex;align-items:center;gap:10px;">
+        <svg
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style="flex-shrink:0;"
+          ><path
+            d="M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9"
+            stroke="var(--accent)"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path></svg
+        >
+        <span style="color:var(--text-primary);">stargazer</span>
+      </h1>
+      <p
+        style="margin: 4px 0 10px; font-size:12px; font-family:var(--font-mono); letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted);"
+      >
+        Component Explorer for Astro
+      </p>
+      <p class="subtitle">
+        Stargaze your components. Zero heavy deps, no throwaway pages. Just <a
+          href="https://astro.build"
+          target="_blank"
+          class="fw-link">Astro</a
+        >.
+      </p>
+
+      <h2 id="why">Why Stargazer?</h2>
+      <p>
+        If you've ever built a component-based website (<a
+          href="https://astro.build"
+          target="_blank"
+          class="fw-link">Astro</a
+        >, <a href="https://nextjs.org" target="_blank" class="fw-link"
+          >Next.js</a
+        >, <a href="https://svelte.dev" target="_blank" class="fw-link"
+          >Svelte</a
+        >, you name it), you've probably done this:
+      </p>
+      <ol>
+        <li>Build a component</li>
+        <li>Move on to the next one</li>
+        <li>Three weeks later… "wait, what did that Hero look like again?"</li>
+        <li>
+          Create a random test page, import the component, check it, delete the
+          page
+        </li>
+        <li>Repeat forever</li>
+      </ol>
+      <p>We all do it. It works, but it's not great.</p>
+      <p>
+        Stargazer started because I wanted something better. Just list your
+        components in <strong>one config file</strong> and get a full visual catalog
+        with viewport testing, zoom, and dark mode toggle. It runs inside your existing
+        Astro dev server. No extra tools, no extra build step, no heavy install.
+      </p>
+
+      <h2 id="inspired">Inspired By</h2>
+      <p>This was built on the ideas of some solid tools that already exist:</p>
+      <ul>
+        <li>
+          <strong
+            ><a href="https://storybook.js.org/" target="_blank" class="fw-link"
+              >Storybook</a
+            ></strong
+          > — the OG, massive ecosystem, addon library for days
+        </li>
+        <li>
+          <strong
+            ><a href="https://histoire.dev/" target="_blank" class="fw-link"
+              >Histoire</a
+            ></strong
+          > — beautiful, great for <a
+            href="https://vuejs.org"
+            target="_blank"
+            class="fw-link">Vue</a
+          > and <a href="https://svelte.dev" target="_blank" class="fw-link"
+            >Svelte</a
+          >
+        </li>
+        <li>
+          <strong
+            ><a href="https://ladle.dev/" target="_blank" class="fw-link"
+              >Ladle</a
+            ></strong
+          > — lightweight Storybook alternative for <a
+            href="https://react.dev"
+            target="_blank"
+            class="fw-link">React</a
+          >
+        </li>
+      </ul>
+      <p>
+        All great tools. But none of them are built <strong>for Astro</strong>,
+        and most come with setup overhead that felt like overkill for what I
+        needed.
+      </p>
+
+      <h2 id="comparison">Comparison</h2>
+      <table>
+        <thead
+          ><tr
+            ><th></th><th>Storybook</th><th>Histoire</th><th>Astro Stargazer</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td>Install size</td><td>~50MB+</td><td>~15MB</td><td
+              ><strong>~0.5MB</strong></td
+            ></tr
+          >
+          <tr
+            ><td>Config per component</td><td
+              >1 <code>.stories</code> file each</td
+            ><td>1 <code>.story</code> file each</td><td
+              ><strong>1 file total</strong></td
+            ></tr
+          >
+          <tr
+            ><td>Extra dev server</td><td>Yes</td><td>Yes</td><td
+              ><strong>No, uses Astro's</strong></td
+            ></tr
+          >
+          <tr
+            ><td>Learning curve</td><td>Decorators, args, controls</td><td
+              >Story syntax</td
+            ><td><strong>Just a list of paths</strong></td></tr
+          >
+          <tr
+            ><td>Astro-native</td><td>❌</td><td>❌</td><td
+              ><strong>✅</strong></td
+            ></tr
+          >
+        </tbody>
+      </table>
+      <blockquote>
+        <p>
+          This isn't a Storybook replacement. If you need interactive controls,
+          docs generation, or a huge addon ecosystem, Storybook is the right
+          choice. Stargazer is for when you just want to <strong
+            >see your components</strong
+          > quickly.
+        </p>
+      </blockquote>
+      <blockquote>
+        <p>
+          <strong>Framework components work too.</strong>
+          <a href="https://astro.build" target="_blank" class="fw-link">Astro</a
+          > supports <a href="https://react.dev" target="_blank" class="fw-link"
+            >React</a
+          >, <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
+          >, <a href="https://svelte.dev" target="_blank" class="fw-link"
+            >Svelte</a
+          >, <a href="https://www.solidjs.com" target="_blank" class="fw-link"
+            >Solid</a
+          > and others via islands. If your <code>.astro</code> component imports
+          a React button or a Vue card, Stargazer previews it exactly as it would
+          render in your real page — hydration and all.
+        </p>
+      </blockquote>
+
+      <h2 id="requirements">Requirements</h2>
+      <table>
+        <thead><tr><th>Requirement</th><th>Version</th></tr></thead>
+        <tbody>
+          <tr><td>Astro</td><td><strong>≥ 4.9.0</strong></td></tr>
+          <tr><td>Node.js</td><td><strong>≥ 18.0.0</strong></td></tr>
+        </tbody>
+      </table>
+      <blockquote>
+        <p>
+          Framework components (<a
+            href="https://react.dev"
+            target="_blank"
+            class="fw-link">React</a
+          >, <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
+          >, <a href="https://svelte.dev" target="_blank" class="fw-link"
+            >Svelte</a
+          >, <a href="https://www.solidjs.com" target="_blank" class="fw-link"
+            >Solid</a
+          >…) work out of the box if you already have them set up in your Astro
+          project — no extra config needed.
+        </p>
+      </blockquote>
+
+      <hr />
+
+      <h2 id="install">Install</h2>
+      <h3>Option A — <code>astro add</code> (recommended)</h3>
+      <pre><code>npx astro add astro-stargazer</code></pre>
+      <p>This automatically updates your <code>astro.config.mjs</code>.</p>
+      <h3>Option B — Manual</h3>
+      <pre><code>npm install astro-stargazer</code></pre>
+
+      <h2 id="config-setup">Config Setup</h2>
+      <h3>1. Add to your Astro config</h3>
+      <pre><code>// astro.config.mjs
+import {'{'} defineConfig {'}'} from 'astro/config';
+import stargazer from 'astro-stargazer';
+
+export default defineConfig({'{'} 
+  integrations: [stargazer()]
+{'}'});</code></pre>
+
+      <h3>2. Create your config</h3>
+      <p>
+        Use <code>defineConfig</code> from <code>astro-stargazer</code> for full IDE
+        autocomplete (zero runtime cost):
+      </p>
+      <pre><code>// stargazer.config.ts
+import {'{'} defineConfig {'}'} from 'astro-stargazer';
+
+export default defineConfig({'{'} 
+  mode: 'auto',
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+{'}'});</code></pre>
+      <p>Or run the setup wizard to generate it interactively:</p>
+      <pre><code>npx create-stargazer</code></pre>
+      <p>Or list components manually with <code>mode: 'files'</code>:</p>
+      <pre><code>import {'{'} defineConfig {'}'} from 'astro-stargazer';
+
+export default defineConfig({'{'} 
+  mode: 'files',
+  components: [
+    {'{'} name: 'Hero', path: './src/components/Hero.astro', description: 'Landing hero section' {'}'},
+    {'{'} name: 'Footer', path: './src/components/Footer.astro' {'}'},
+  ],
+{'}'});</code></pre>
+      <p>That's it. No stories, no decorators, no extra syntax.</p>
+
+      <h2 id="run">Run</h2>
+      <pre><code>npm run dev</code></pre>
+      <p>
+        Open <strong><code>/stargazer</code></strong> in your browser — check your
+        terminal for the exact port (usually <code>4321</code>). 🔭
+      </p>
+      <blockquote>
+        <p>
+          Works on macOS, Linux and Windows — pure Node.js, no native binaries.
+        </p>
+      </blockquote>
+
+      <hr />
+
+      <h2 id="config-reference">Configuration Reference</h2>
+      <p>
+        Create <code>stargazer.config.ts</code> (or <code>.js</code> / <code
+          >.mjs</code
+        >) in your project root:
+      </p>
+      <pre><code>import type {'{'} StargazerConfig {'}'} from 'astro-stargazer';
+
+const config: StargazerConfig = {'{'} ... {'}'};
+export default config;</code></pre>
+
+      <h3>Options</h3>
+      <table>
+        <thead
+          ><tr
+            ><th>Option</th><th>Type</th><th>Default</th><th>Description</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td><code>mode</code></td><td
+              ><code>'files' &#124; 'auto'</code></td
+            ><td><code>'auto'</code></td><td>How components are discovered</td
+            ></tr
+          >
+          <tr
+            ><td><code>exclude</code></td><td><code>string[]</code></td><td
+              ><code>['src/layouts','src/pages','src/styles']</code></td
+            ><td>Paths to exclude (auto mode only)</td></tr
+          >
+          <tr
+            ><td><code>defaults</code></td><td
+              ><code>Record&lt;string, unknown&gt;</code></td
+            ><td><code>{"{}"}</code></td><td
+              >Global props applied to all components</td
+            ></tr
+          >
+          <tr
+            ><td><code>defaultLayout</code></td><td><code>string</code></td><td
+              ><code>undefined</code></td
+            ><td>Key from <code>layouts</code> map to use by default</td></tr
+          >
+          <tr
+            ><td><code>layoutMap</code></td><td
+              ><code>Record&lt;string, string&gt;</code></td
+            ><td><code>undefined</code></td><td
+              >Map directory paths to layout keys (auto/files mode)</td
+            ></tr
+          >
+          <tr
+            ><td><code>layouts</code></td><td
+              ><code>Record&lt;string, string&gt;</code></td
+            ><td><code>{"{}"}</code></td><td
+              >Map of layout names to file paths</td
+            ></tr
+          >
+          <tr
+            ><td><code>components</code></td><td
+              ><code>StargazerComponent[]</code></td
+            ><td><code>[]</code></td><td
+              >Components to preview (files mode only)</td
+            ></tr
+          >
+          <tr
+            ><td><code>scanDir</code></td><td><code>string</code></td><td
+              ><code>'./src/components'</code></td
+            ><td>Directory to scan (files mode only)</td></tr
+          >
+          <tr
+            ><td><code>base</code></td><td><code>string</code></td><td
+              ><code>'/stargazer'</code></td
+            ><td>URL path for Stargazer</td></tr
+          >
+          <tr
+            ><td><code>buildable</code></td><td><code>boolean</code></td><td
+              ><code>false</code></td
+            ><td>Include in production builds (default: dev-only)</td></tr
+          >
+          <tr
+            ><td><code>darkMode</code></td><td
+              ><code>false &#124; DarkModeConfig</code></td
+            ><td><code>{"{}"}</code> (enabled)</td><td
+              >Dark mode toggle, set to <code>false</code> to hide</td
+            ></tr
+          >
+        </tbody>
+      </table>
+
+      <h2 id="component-entry">Component Entry</h2>
+      <table>
+        <thead
+          ><tr
+            ><th>Field</th><th>Type</th><th>Required</th><th>Description</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td><code>name</code></td><td><code>string</code></td><td>✅</td
+            ><td>Display name in the index</td></tr
+          >
+          <tr
+            ><td><code>path</code></td><td><code>string</code></td><td>✅</td
+            ><td>Path to <code>.astro</code> file (relative to project root)</td
+            ></tr
+          >
+          <tr
+            ><td><code>description</code></td><td><code>string</code></td><td
+              >❌</td
+            ><td>Short description shown on the index card</td></tr
+          >
+          <tr
+            ><td><code>layout</code></td><td><code>string</code></td><td>❌</td
+            ><td>Layout key, overrides <code>defaultLayout</code></td></tr
+          >
+          <tr
+            ><td><code>props</code></td><td
+              ><code>Record&lt;string, unknown&gt;</code></td
+            ><td>❌</td><td>Props, overrides <code>defaults</code></td></tr
+          >
+          <tr
+            ><td><code>variants</code></td><td
+              ><code>StargazerVariant[]</code></td
+            ><td>❌</td><td
+              >Multiple prop combinations for the same component</td
+            ></tr
+          >
+          <tr
+            ><td><code>category</code></td><td><code>string</code></td><td
+              >❌</td
+            ><td>Custom category label (default: detected from folder)</td></tr
+          >
+        </tbody>
+      </table>
+
+      <h2 id="variant-entry">Variant Entry</h2>
+      <table>
+        <thead
+          ><tr
+            ><th>Field</th><th>Type</th><th>Required</th><th>Description</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td><code>name</code></td><td><code>string</code></td><td>✅</td
+            ><td>Variant display name</td></tr
+          >
+          <tr
+            ><td><code>props</code></td><td
+              ><code>Record&lt;string, unknown&gt;</code></td
+            ><td>❌</td><td
+              >Props for this variant, overrides component-level props</td
+            ></tr
+          >
+        </tbody>
+      </table>
+
+      <hr />
+
+      <h2 id="modes">Modes</h2>
+
+      <h3>Auto Mode (recommended for new projects)</h3>
+      <p>
+        Zero config. Stargazer recursively scans <code>src/</code> and discovers all
+        <code>.astro</code> files. Layouts, pages and styles are excluded by default.
+        Component and layout discovery happens at <em>runtime</em> — create a new
+        component, refresh the browser, and Stargazer picks it up instantly.
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+{'}'};</code></pre>
+
+      <h4>Auto mode + multiple layouts (<code>layoutMap</code>)</h4>
+      <p>
+        If your project has more than one layout, use <code>layoutMap</code> to assign
+        layouts by directory. More specific paths win.
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaultLayout: 'main',
+  layouts: {'{'} 
+    main: './src/layouts/Layout.astro',
+    blog: './src/layouts/BlogLayout.astro',
+  {'}'},
+  layoutMap: {'{'} 
+    'src/components/blog': 'blog',
+    'src/components': 'main',
+  {'}'},
+{'}'};</code></pre>
+
+      <h4>Auto mode + global defaults</h4>
+      <p>
+        Most projects have components that require common props like <code
+          >lang</code
+        >, <code>theme</code>, or a logged-in user object. Use <code
+          >defaults</code
+        > to pass them to every component automatically:
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaults: {'{'} 
+    lang: 'en',
+    theme: 'default',
+  {'}'},
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+{'}'};</code></pre>
+      <blockquote>
+        <p>
+          <strong>Important:</strong> In <code>auto</code> mode, components that require
+          props but don't receive them will throw a runtime error in the preview.
+          Add any required props to <code>defaults</code> to fix this.
+        </p>
+      </blockquote>
+
+      <h3>Files Mode</h3>
+      <p>All components listed in <code>stargazer.config.ts</code>:</p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'files',
+  components: [
+    {'{'} name: 'Hero', path: './src/components/Hero.astro', description: 'Landing hero section' {'}'},
+    {'{'} name: 'Footer', path: './src/components/Footer.astro' {'}'},
+  ],
+{'}'};</code></pre>
+      <p><strong>Best for:</strong> Full control over what's shown — choose exactly which components appear and in what order.</p>
+
+      <hr />
+
+      <h2 id="recipes">Recipes</h2>
+      <p>Common configuration patterns for real projects.</p>
+
+      <h3 id="recipe-design-system">
+        Design system — buttons, badges, cards with all variants
+      </h3>
+      <p>
+        If you're building a component library, list every variant explicitly so
+        you can visually QA them all in one session:
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'files',
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+  components: [
+    {'{'} 
+      name: 'Button',
+      path: './src/components/ui/Button.astro',
+      variants: [
+        {'{'} name: 'Primary',   props: {'{'} variant: 'primary',   size: 'md' {'}'} {'}'},
+        {'{'} name: 'Secondary', props: {'{'} variant: 'secondary', size: 'md' {'}'} {'}'},
+        {'{'} name: 'Ghost',     props: {'{'} variant: 'ghost',     size: 'md' {'}'} {'}'},
+        {'{'} name: 'Danger',    props: {'{'} variant: 'danger',    size: 'md' {'}'} {'}'},
+        {'{'} name: 'Disabled',  props: {'{'} variant: 'primary',   disabled: true {'}'} {'}'},
+        {'{'} name: 'Small',     props: {'{'} variant: 'primary',   size: 'sm' {'}'} {'}'},
+        {'{'} name: 'Large',     props: {'{'} variant: 'primary',   size: 'lg' {'}'} {'}'},
+      ],
+    {'}'},
+    {'{'} 
+      name: 'Badge',
+      path: './src/components/ui/Badge.astro',
+      variants: [
+        {'{'} name: 'Green',  props: {'{'} color: 'green',  label: 'Active'  {'}'} {'}'},
+        {'{'} name: 'Red',    props: {'{'} color: 'red',    label: 'Error'   {'}'} {'}'},
+        {'{'} name: 'Yellow', props: {'{'} color: 'yellow', label: 'Warning' {'}'} {'}'},
+        {'{'} name: 'Blue',   props: {'{'} color: 'blue',   label: 'Info'    {'}'} {'}'},
+      ],
+    {'}'},
+  ],
+{'}'};</code></pre>
+
+      <h3 id="recipe-multilingual">
+        Multilingual site — preview every component in every locale
+      </h3>
+      <p>
+        Use <code>defaults</code> for the fallback language and <code
+          >variants</code
+        > to preview other locales:
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaults: {'{'} lang: 'en' {'}'},
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+  components: [
+    {'{'} 
+      name: 'Hero',
+      path: './src/components/Hero.astro',
+      variants: [
+        {'{'} name: 'English',    props: {'{'} lang: 'en' {'}'} {'}'},
+        {'{'} name: 'Portuguese', props: {'{'} lang: 'pt' {'}'} {'}'},
+        {'{'} name: 'Spanish',    props: {'{'} lang: 'es' {'}'} {'}'},
+      ],
+    {'}'},
+    {'{'} 
+      name: 'Pricing',
+      path: './src/components/Pricing.astro',
+      variants: [
+        {'{'} name: 'USD', props: {'{'} currency: 'USD', lang: 'en' {'}'} {'}'},
+        {'{'} name: 'EUR', props: {'{'} currency: 'EUR', lang: 'pt' {'}'} {'}'},
+      ],
+    {'}'},
+  ],
+{'}'};</code></pre>
+
+      <h3 id="recipe-large-project">
+        Large project — auto mode with layout mapping by section
+      </h3>
+      <p>
+        Use <code>layoutMap</code> when different sections of your site use different
+        layouts:
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaults: {'{'} lang: 'en', user: {'{'} name: 'Demo User', role: 'admin' {'}'} {'}'},
+  defaultLayout: 'main',
+  layouts: {'{'} 
+    main:      './src/layouts/Layout.astro',
+    blog:      './src/layouts/BlogLayout.astro',
+    dashboard: './src/layouts/DashboardLayout.astro',
+  {'}'},
+  layoutMap: {'{'} 
+    'src/components/dashboard': 'dashboard',
+    'src/components/blog':      'blog',
+    'src/components':           'main',
+  {'}'},
+  exclude: ['src/components/internal', 'src/components/deprecated'],
+{'}'};</code></pre>
+      <blockquote>
+        <p>
+          More specific paths win in <code>layoutMap</code> — <code
+            >src/components/dashboard</code
+          > takes priority over <code>src/components</code> for any component inside
+          it.
+        </p>
+      </blockquote>
+
+      <h3 id="recipe-team">
+        Team project — per-component files with Files Mode
+      </h3>
+      <p>
+        In a team, each developer owns their component's preview file. The
+        config stays minimal:
+      </p>
+      <pre><code>// stargazer.config.ts — shared config, no component list needed
+const config: StargazerConfig = {'{'} 
+  mode: 'files',
+  defaults: {'{'} lang: 'en', theme: 'default' {'}'},
+  defaultLayout: 'main',
+  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+{'}'};</code></pre>
+
+      <hr />
+
+      <h2 id="variants">Variants</h2>
+      <p>
+        Variants let you preview the same component with different props — ideal
+        for design system components like buttons, badges, and cards.
+      </p>
+      <pre><code>{'{'} 
+  name: 'Button',
+  path: './src/components/Button.astro',
+  variants: [
+    {'{'} name: 'Primary',   props: {'{'} variant: 'primary',   size: 'md' {'}'} {'}'},
+    {'{'} name: 'Secondary', props: {'{'} variant: 'secondary', size: 'md' {'}'} {'}'},
+    {'{'} name: 'Ghost',     props: {'{'} variant: 'ghost',     size: 'md' {'}'} {'}'},
+    {'{'} name: 'Danger',    props: {'{'} variant: 'danger',    size: 'md' {'}'} {'}'},
+  ],
+{'}'}</code></pre>
+      <p>
+        Each variant appears as a separate card in the index: <code
+          >Button / Primary</code
+        >, <code>Button / Ghost</code>, etc.
+      </p>
+
+      <h3>Example — Badge colors</h3>
+      <pre><code>{'{'}
+  name: 'Badge',
+  path: './src/components/Badge.astro',
+  variants: [
+    {'{'} name: 'Green',   props: {'{'} color: 'green',  label: 'Active'  {'}'} {'}'},
+    {'{'} name: 'Red',     props: {'{'} color: 'red',    label: 'Error'   {'}'} {'}'},
+    {'{'} name: 'Yellow',  props: {'{'} color: 'yellow', label: 'Warning' {'}'} {'}'},
+    {'{'} name: 'Blue',    props: {'{'} color: 'blue',   label: 'Info'    {'}'} {'}'},
+  ],
+{'}'}</code></pre>
+
+      <h2 id="props-inheritance">Props Inheritance</h2>
+      <p>Props are merged in this order (later wins):</p>
+      <pre><code>Global defaults → Component props → Variant props</code></pre>
+      <pre><code>const config: StargazerConfig = {'{'}
+  defaults: {'{'} lang: 'en', colorMode: 'dark' {'}'},
+  components: [
+    {'{'}
+      name: 'Hero',
+      path: './src/components/Hero.astro',
+      props: {'{'} colorMode: 'light' {'}'},         // overrides default
+      variants: [
+        {'{'} name: 'English' {'}'},                 // gets: {'{'} lang: 'en', colorMode: 'light' {'}'}
+        {'{'} name: 'Portuguese', props: {'{'} lang: 'pt' {'}'} {'}'}, // gets: {'{'} lang: 'pt', colorMode: 'light' {'}'}
+      ],
+    {'}'},
+  ],
+{'}'};</code></pre>
+      <table>
+        <thead
+          ><tr
+            ><th>Prop</th><th>Global</th><th>Component</th><th>Variant (PT)</th
+            ><th>Final</th></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td><code>lang</code></td><td><code>'en'</code></td><td>—</td><td
+              ><code>'pt'</code></td
+            ><td><strong><code>'pt'</code></strong></td></tr
+          >
+          <tr
+            ><td><code>colorMode</code></td><td><code>'dark'</code></td><td
+              ><code>'light'</code></td
+            ><td>—</td><td><strong><code>'light'</code></strong></td></tr
+          >
+        </tbody>
+      </table>
+
+      <h2 id="layout-wrapping">Layout Wrapping</h2>
+      <p>
+        Components often need their parent layout for correct rendering — global
+        CSS, navigation, fonts, etc.
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'}
+  defaultLayout: 'main',
+  layouts: {'{'}
+    main: './src/layouts/Layout.astro',
+    blog: './src/layouts/BlogLayout.astro',
+  {'}'},
+  components: [
+    {'{'} name: 'Hero',     path: './src/components/Hero.astro' {'}'},
+    // ↑ uses 'main' layout (from defaultLayout)
+
+    {'{'} name: 'Blog Card', path: './src/components/BlogCard.astro', layout: 'blog' {'}'},
+    // ↑ uses 'blog' layout (override)
+
+    {'{'} name: 'Icon',     path: './src/components/Icon.astro', layout: undefined {'}'},
+    // ↑ no layout — renders standalone
+  ],
+{'}'};</code></pre>
+      <ul>
+        <li>
+          With layout: component renders <strong>inside the layout</strong> as <code
+            >&lt;slot /&gt;</code
+          > child
+        </li>
+        <li>
+          <code>layout: undefined</code>: component renders standalone, no
+          wrapping
+        </li>
+        <li>
+          No <code>layout</code> field: <code>defaultLayout</code> is used
+        </li>
+      </ul>
+
+      <h3>The <code>isStargazer</code> Prop</h3>
+      <p>
+        Stargazer automatically injects <code
+          >{"{"} isStargazer: true {"}"}</code
+        > into the Layout's <code>Astro.props</code>. Use it to hide navbars and
+        footers from previews:
+      </p>
+      <pre><code>---
+// src/layouts/Layout.astro
+const {'{'} isStargazer {'}'} = Astro.props;
+---
+&lt;html lang="en"&gt;
+  &lt;body&gt;
+    {'{'}!isStargazer && &lt;Header /&gt;{'}'}
+    &lt;slot /&gt;
+    {'{'}!isStargazer && &lt;Footer /&gt;{'}'}
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+      <h2 id="override-editor">Override Editor &amp; Settings</h2>
+      <p>
+        Each component card has a <code>✎</code> button (always visible, yellow) that
+        opens the override editor modal. Changes are stored in <code
+          >localStorage</code
+        > — they never modify your config files.
+      </p>
+
+      <h3>Per-component override</h3>
+      <p>Click <code>✎</code> on any card to:</p>
+      <ul>
+        <li>
+          <strong>Switch layout</strong> — choose from any layout defined in <code
+            >layouts</code
+          >
+        </li>
+        <li>
+          <strong>Set props</strong> — enter a JSON object that merges on top of existing
+          props
+        </li>
+      </ul>
+
+      <h3>Global Settings &amp; Visibility</h3>
+      <p>
+        The <strong>⚙ Settings</strong> button in the status bar applies overrides
+        to every component in the session. Per-component overrides take priority:
+      </p>
+      <pre><code>component override  &gt;  global override  &gt;  config</code></pre>
+      <blockquote>
+        <p>
+          <strong>Config default vs. session override:</strong> The <code
+            >defaultLayout</code
+          > in your <code>stargazer.config.ts</code> is the permanent baseline — what
+          runs when nothing is overridden. The layout you pick in the ⚙ Settings modal
+          is a <em>temporary session override</em> stored only in <code
+            >localStorage</code
+          >. Cards show <strong>Default Layout</strong> only when no override is active
+          and the component is using its config default. If you select a layout in
+          Settings (even the same one), it counts as an override and shows the layout
+          filename instead.
+        </p>
+      </blockquote>
+      <p>
+        Inside the Settings modal, you have access to <strong
+          >Visibility Toggles</strong
+        >:
+      </p>
+      <ul>
+        <li>
+          <strong>Hide Categories:</strong> Uncheck an entire category to collapse
+          it and grey out all its children.
+        </li>
+        <li>
+          <strong>Hide Components:</strong> Disable specific items to declutter your
+          search index.
+        </li>
+        <li>
+          <strong>Persistence:</strong> Toggles persist in your browser and do not
+          mutate your team's config files.
+        </li>
+      </ul>
+
+      <h2 id="css-styles">CSS &amp; Global Styles</h2>
+      <table>
+        <thead><tr><th>Source</th><th>Works?</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr
+            ><td
+              >Scoped <code>&lt;style&gt;</code> inside <code>.astro</code></td
+            ><td>✅ Always</td><td>Collected from Vite's module graph</td></tr
+          >
+          <tr
+            ><td>Global CSS imported in a layout</td><td>✅ With layout</td><td
+              >Parsed from the layout file</td
+            ></tr
+          >
+          <tr
+            ><td>Global CSS not in a layout</td><td>❌</td><td
+              >Only exists if the layout imports it</td
+            ></tr
+          >
+        </tbody>
+      </table>
+      <p>
+        <strong>The fix:</strong> Always set a <code>defaultLayout</code> that imports
+        your global stylesheet. Components without a layout show <code
+          >⚠ no layout</code
+        > in the index.
+      </p>
+      <blockquote>
+        <p>
+          <strong>How it works under the hood:</strong> When a component is requested
+          for preview, Stargazer calls <code>ssrLoadModule</code> on the component
+          file. This populates Vite's module graph with the component's scoped style
+          modules (<code>?astro&amp;type=style</code>). Stargazer then traverses
+          the module graph to collect these URLs and injects them as <code
+            >&lt;link&gt;</code
+          > tags alongside the layout's global CSS imports.
+        </p>
+      </blockquote>
+
+      <h2 id="viewport-zoom">Viewport &amp; Zoom</h2>
+      <h3>Viewport Buttons</h3>
+      <table>
+        <thead><tr><th>Button</th><th>Width</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr><td>FULL</td><td>100%</td><td>Current browser width</td></tr>
+          <tr><td>2560px</td><td>2560px</td><td>4K / Ultra-wide</td></tr>
+          <tr><td>1440px</td><td>1440px</td><td>Standard desktop</td></tr>
+          <tr
+            ><td>1024px</td><td>1024px</td><td
+              >Tablet landscape / Small laptop</td
+            ></tr
+          >
+          <tr><td>780px</td><td>780px</td><td>Tablet portrait</td></tr>
+          <tr><td>390px</td><td>390px</td><td>Mobile</td></tr>
+        </tbody>
+      </table>
+      <blockquote>
+        <p>
+          <strong>Viewport &gt; screen width:</strong> Preview scales down visually
+          but media queries respond to the real selected viewport width.
+        </p>
+      </blockquote>
+
+      <h3>Zoom</h3>
+      <p>Zoom appears only when viewport is ≤ 1024px:</p>
+      <table>
+        <thead><tr><th>Button</th><th>Scale</th></tr></thead>
+        <tbody>
+          <tr><td>100%</td><td>1.0</td></tr>
+          <tr><td>75%</td><td>0.75</td></tr>
+          <tr><td>50%</td><td>0.5</td></tr>
+          <tr><td>25%</td><td>0.25 — full page at a glance</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="dark-mode">Dark Mode</h2>
+      <p>
+        The dark/light toggle is enabled by default. Configure to match your
+        project:
+      </p>
+      <pre><code>// Disable entirely
+darkMode: false
+
+// <a href="https://tailwindcss.com" target="_blank" class="fw-link">Tailwind</a> (class)
+darkMode: {'{'} method: 'class' {'}'}
+
+// <a href="https://daisyui.com" target="_blank" class="fw-link">DaisyUI</a> / <a href="https://picocss.com" target="_blank" class="fw-link">Pico CSS</a>
+darkMode: {'{'} method: 'data-theme' {'}'}
+
+// Custom attribute (default behavior)
+darkMode: {'{'} method: 'attribute', attribute: 'color-scheme' {'}'}
+
+// Custom values
+darkMode: {'{'} method: 'data-theme', dark: 'night', light: 'day' {'}'}</code></pre>
+
+      <h3>Full options</h3>
+      <table>
+        <thead
+          ><tr
+            ><th>Option</th><th>Type</th><th>Default</th><th>Description</th
+            ></tr
+          ></thead
+        >
+        <tbody>
+          <tr
+            ><td><code>method</code></td><td
+              ><code>'attribute' &#124; 'class' &#124; 'data-theme'</code></td
+            ><td><code>'attribute'</code></td><td>How dark mode is applied</td
+            ></tr
+          >
+          <tr
+            ><td><code>attribute</code></td><td><code>string</code></td><td
+              ><code>'color-scheme'</code></td
+            ><td>Attribute name (attribute method only)</td></tr
+          >
+          <tr
+            ><td><code>target</code></td><td><code>string</code></td><td
+              ><code>'html'</code></td
+            ><td>CSS selector for the target element</td></tr
+          >
+          <tr
+            ><td><code>dark</code></td><td><code>string</code></td><td
+              ><code>'dark'</code></td
+            ><td>Value/class for dark mode</td></tr
+          >
+          <tr
+            ><td><code>light</code></td><td><code>string</code></td><td
+              ><code>'light'</code></td
+            ><td>Value/class for light mode</td></tr
+          >
+        </tbody>
+      </table>
+
+      <h2 id="search">Search</h2>
+      <p>
+        The index shows a search input when <strong
+          >more than 4 components</strong
+        > are registered.
+      </p>
+      <ul>
+        <li>
+          Type to filter by <strong>component name</strong> or <strong
+            >category</strong
+          >
+        </li>
+        <li>
+          Press <code>/</code> anywhere on the index page to focus the search input
+        </li>
+        <li>Press <code>Escape</code> to clear and blur the input</li>
+        <li>Categories with no matching components are hidden automatically</li>
+      </ul>
+
+      <h2 id="category-view-all">Category View All</h2>
+      <p>
+        Every category on the index page has a <strong>View All</strong> link. Clicking
+        it opens a scrollable page showing every component in that category rendered
+        at full size.
+      </p>
+      <ul>
+        <li>All components render inside <strong>one shared Layout</strong></li>
+        <li>Components are stacked vertically, no iframes</li>
+        <li>A sticky label marks each component boundary</li>
+        <li>
+          All nav bar controls (viewport, zoom, dark mode) apply to the entire
+          page
+        </li>
+      </ul>
+
+      <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+      <p>Available on any preview page:</p>
+      <table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><code>F</code></td><td>Switch to FULL viewport</td></tr>
+          <tr><td><code>D</code></td><td>Switch to DARK theme</td></tr>
+          <tr><td><code>L</code></td><td>Switch to LIGHT theme</td></tr>
+          <tr><td><code>1</code></td><td>Zoom 100%</td></tr>
+          <tr><td><code>2</code></td><td>Zoom 75%</td></tr>
+          <tr
+            ><td><code>3</code></td><td
+              >Zoom 50% <em>(only when viewport ≤ 1024px)</em></td
+            ></tr
+          >
+          <tr
+            ><td><code>4</code></td><td
+              >Zoom 25% <em>(only when viewport ≤ 1024px)</em></td
+            ></tr
+          >
+          <tr><td><code>R</code></td><td>Reload the component iframe</td></tr>
+          <tr><td><code>C</code></td><td>Copy Props to clipboard</td></tr>
+          <tr><td><code>←</code></td><td>Navigate to previous component</td></tr
+          >
+          <tr><td><code>→</code></td><td>Navigate to next component</td></tr>
+          <tr
+            ><td><code>/</code></td><td>Focus search input (index only)</td></tr
+          >
+          <tr><td><code>Escape</code></td><td>Clear search (index only)</td></tr
+          >
+        </tbody>
+      </table>
+      <p>
+        Shortcuts are disabled when focus is inside a text input. Zoom shortcuts
+        (<code>1</code>–<code>4</code>) are only active when viewport is ≤
+        1024px — matching when the zoom buttons are visible.
+      </p>
+
+      <h2 id="copy-props">Copy Props</h2>
+      <p>
+        The <strong>COPY PROPS</strong> button in the preview nav bar copies the current
+        component's props as formatted JSON to your clipboard. Useful for sharing
+        exact prop states with teammates or debugging.
+      </p>
+
+      <h2 id="url-state">URL State</h2>
+      <p>Viewport and zoom are persisted in the URL query string:</p>
+      <pre><code>/stargazer/hero?vp=390&zoom=0.75</code></pre>
+      <ul>
+        <li>Paste the URL to share the exact view with a teammate</li>
+        <li>State is also saved to <code>localStorage</code> as a fallback</li>
+        <li>
+          When opening a fresh preview, Stargazer restores your last
+          viewport/zoom automatically
+        </li>
+      </ul>
+
+      <h2 id="hot-reload">Hot Reload</h2>
+      <p>
+        When you edit <code>stargazer.config.ts</code>, the browser reloads
+        automatically — no need to restart the dev server.
+      </p>
+      <ul>
+        <li>Only fires on <code>change</code> events (not on file deletion)</li>
+        <li>300ms debounce to avoid double triggers on save</li>
+        <li>
+          Logs to console: <code
+            >[astro-stargazer] Config reloaded — X component(s)</code
+          >
+        </li>
+      </ul>
+
+      <h2 id="error-boundary">Error Boundary</h2>
+      <p>
+        If a component fails to load or throws at runtime, Stargazer shows a
+        styled error card instead of a blank page.
+      </p>
+      <ul>
+        <li>
+          <strong>Server-side errors</strong> — caught by the SSR route, shows error
+          message + file path + Reload button
+        </li>
+        <li>
+          <strong>Client-side runtime errors</strong> — caught by <code
+            >window.onerror</code
+          >, replaces the body
+        </li>
+      </ul>
+      <p>Fix the error in your component and click Reload.</p>
+
+      <hr />
+
+      <h2 id="per-component-files">Per-Component Files</h2>
+      <p>
+        When using <code>mode: 'files'</code>, create a <code>.preview.ts</code> file
+        next to any component:
+      </p>
+      <pre><code>src/components/
+├── hero/
+│   ├── Hero.astro
+│   └── Hero.preview.ts      ← detected automatically
+├── cards/
+│   ├── PostCard.astro
+│   └── PostCard.preview.ts
+└── Footer.astro              ← no .preview.ts = uses global defaults</code></pre>
+
+      <h3>Preview file format</h3>
+      <pre><code>// Hero.preview.ts
+export default {'{'} 
+  name: 'Hero Section',
+  layout: 'main',
+  category: 'Marketing',
+  description: 'Main landing hero',
+  props: {'{'} lang: 'en' {'}'},
+  variants: [
+    {'{'} name: 'Default' {'}'},
+    {'{'} name: 'Portuguese', props: {'{'} lang: 'pt' {'}'} {'}'},
+  ],
+{'}'};</code></pre>
+
+      <h2 id="architecture">Architecture</h2>
+      <pre><code>Your Astro Project
+├── astro.config.mjs          ← adds stargazer() integration
+├── stargazer.config.ts       ← your component registry
+└── src/
+    ├── components/           ← your components
+    └── layouts/              ← your layouts
+
+astro-stargazer (npm package)
+├── src/
+│   ├── integration.ts        ← Astro hooks, route injection, JSON API middleware
+│   ├── scanner.ts            ← component discovery (auto + files modes)
+│   ├── generator.ts          ← builds registry JSON
+│   ├── types.ts              ← TypeScript interfaces
+│   ├── routes/
+│   │   ├── index.astro       ← component registry page with search
+│   │   ├── preview.astro     ← single component view shell
+│   │   ├── category.astro    ← category "View All" shell
+│   │   ├── docs.astro        ← this documentation page
+│   │   ├── frame/[slug].astro    ← renders a single component
+│   │   ├── frame-cat/[...cat].astro ← renders all components in a category
+│   │   └── _Nav.astro        ← shared nav bar component
+│   └── client/
+│       └── controls.js       ← viewport/zoom/theme/shortcuts
+└── bin/
+    └── create-stargazer.mjs  ← npx setup wizard</code></pre>
+
+      <h3>API Endpoints (Vite middleware)</h3>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr
+            ><td><code>/__stargazer/registry.json</code></td><td
+              >Full component list + config</td
+            ></tr
+          >
+          <tr
+            ><td><code>/__stargazer/preview/:slug</code></td><td
+              >Component metadata as JSON</td
+            ></tr
+          >
+          <tr
+            ><td><code>/__stargazer/paths/:slug</code></td><td
+              >Returns <code>/@fs/</code> URLs for component + layout + CSS</td
+            ></tr
+          >
+          <tr
+            ><td><code>/__stargazer/render-category-meta/:cat</code></td><td
+              >Returns JSON list of slugs for a category</td
+            ></tr
+          >
+        </tbody>
+      </table>
+
+      <h3>Data flow</h3>
+      <p>
+        <strong>Single component view (<code>/stargazer/[slug]</code>):</strong>
+      </p>
+      <ol>
+        <li>
+          Integration reads <code>stargazer.config.ts</code> at dev server startup
+        </li>
+        <li>
+          Scanner resolves components and merges props (defaults → component →
+          variant)
+        </li>
+        <li>
+          Route <code>/stargazer/[slug]</code> serves <code>preview.astro</code> —
+          an HTML shell with the shared nav bar
+        </li>
+        <li>
+          The shell renders an <code>&lt;iframe&gt;</code> pointing to <code
+            >/stargazer/frame/[slug]</code
+          >
+        </li>
+        <li>
+          The frame route dynamically imports the Layout and Component, and
+          renders them as a native Astro page
+        </li>
+        <li>
+          CSS is collected from two sources: Layout file CSS imports and
+          component scoped styles (via <code>ssrLoadModule</code> + module graph traversal)
+        </li>
+      </ol>
+
+      <hr />
+
+      <h2 id="platform">Platform Compatibility</h2>
+      <p>
+        Astro Stargazer runs on <strong>macOS, Linux and Windows</strong> — any OS
+        that supports Node.js ≥ 18.
+      </p>
+      <ul>
+        <li>Pure Node.js — no native binaries</li>
+        <li>No shell scripts or OS-specific paths</li>
+        <li>
+          The wizard uses only <code>readline</code> and <code>fs</code> from the
+          Node standard library
+        </li>
+      </ul>
+
+      <h2 id="framework">Framework Compatibility</h2>
+      <p>
+        Stargazer previews <code>.astro</code> files. Since <a
+          href="https://astro.build"
+          target="_blank"
+          class="fw-link">Astro</a
+        > natively supports <strong
+          ><a href="https://react.dev" target="_blank" class="fw-link">React</a
+          >, <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
+          >, <a href="https://svelte.dev" target="_blank" class="fw-link"
+            >Svelte</a
+          >, <a href="https://www.solidjs.com" target="_blank" class="fw-link"
+            >Solid</a
+          >, <a href="https://preactjs.com" target="_blank" class="fw-link"
+            >Preact</a
+          >, <a href="https://alpinejs.dev" target="_blank" class="fw-link"
+            >Alpine</a
+          ></strong
+        > and others via its island architecture, any framework component imported
+        inside an <code>.astro</code> file works automatically.
+      </p>
+      <pre><code>---
+// src/components/Card.astro
+import Button from './Button.tsx';    // React
+import Tooltip from './Tooltip.vue';  // Vue
+import Badge from './Badge.svelte';   // Svelte
+---
+&lt;Button variant="primary" /&gt;
+&lt;Tooltip text="hello" client:hover /&gt;
+&lt;Badge color="green" /&gt;</code></pre>
+      <p>
+        Stargazer previews <code>Card.astro</code> and everything inside it renders
+        exactly as it would in your real page — hydration directives included.
+      </p>
+
+      <hr />
+
+      <h2 id="contributing">Contributing</h2>
+      <p>
+        Want to help? Contributions are welcome. Whether it's bug reports,
+        feature ideas, or PRs for other framework support, feel free to jump in.
+        Check the <a
+          href="https://github.com/webxtekagency/astro-stargazer/issues"
+          target="_blank">issues</a
+        > or just open one.
+      </p>
+
+      <h2 id="roadmap">Roadmap</h2>
+      <p>
+        <strong
+          ><a href="https://react.dev" target="_blank" class="fw-link">React</a
+          >, <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
+          >, <a href="https://svelte.dev" target="_blank" class="fw-link"
+            >Svelte</a
+          >, <a href="https://www.solidjs.com" target="_blank" class="fw-link"
+            >Solid</a
+          > components work today</strong
+        > — if you use them inside <code>.astro</code> files, Stargazer previews them
+        with full hydration support.
+      </p>
+      <p>
+        The longer-term plan is standalone packages for projects that don't use <a
+          href="https://astro.build"
+          target="_blank"
+          class="fw-link">Astro</a
+        > at all:
+      </p>
+      <ul>
+        <li>
+          <code>next-stargazer</code> — for pure <a
+            href="https://nextjs.org"
+            target="_blank"
+            class="fw-link">Next.js</a
+          > / <a href="https://react.dev" target="_blank" class="fw-link"
+            >React</a
+          > projects
+        </li>
+        <li>
+          <code>svelte-stargazer</code> — for pure <a
+            href="https://svelte.dev/docs/kit"
+            target="_blank"
+            class="fw-link">SvelteKit</a
+          > projects
+        </li>
+        <li>
+          <code>nuxt-stargazer</code> — for pure <a
+            href="https://nuxt.com"
+            target="_blank"
+            class="fw-link">Nuxt</a
+          > / <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
+          > projects
+        </li>
+      </ul>
+      <p>No timeline on these yet. Astro is the focus until v1.0 is solid.</p>
+
+      <hr />
+
+      <h2 id="troubleshooting">Troubleshooting</h2>
+
+      <h3>Components not showing up</h3>
+      <ol>
+        <li>
+          Check that <code>stargazer.config.ts</code> exists in project root
+        </li>
+        <li>
+          Verify <code>path</code> values start with <code>./</code> and are relative
+          to project root
+        </li>
+        <li>
+          Run <code>npm run dev</code> and check console for <code
+            >[astro-stargazer] Found X component(s)</code
+          >
+        </li>
+        <li>
+          In <code>mode: 'auto'</code>, make sure the component is inside <code
+            >src/</code
+          > and not in an excluded path
+        </li>
+      </ol>
+
+      <h3>Styles missing in preview</h3>
+      <ul>
+        <li>
+          Set <code>defaultLayout</code> to a layout that imports your global CSS
+        </li>
+        <li>
+          Components without a layout show <code>⚠ no layout</code> in the index
+        </li>
+      </ul>
+
+      <h3>Layout not wrapping correctly</h3>
+      <ul>
+        <li>
+          Ensure your layout uses <code>&lt;slot /&gt;</code> to render children
+        </li>
+        <li>
+          Verify the layout key in <code>components</code> matches a key in <code
+            >layouts</code
+          >
+        </li>
+      </ul>
+
+      <h3>Stargazer not in production</h3>
+      <p>
+        By design — dev-only. Set <code>buildable: true</code> to include it in production
+        builds.
+      </p>
+      <blockquote>
+        <p>
+          <strong>Important:</strong> When using <code>buildable: true</code>,
+          your Astro project <strong
+            >must have a server adapter configured</strong
+          > (<a
+            href="https://www.cloudflare.com"
+            target="_blank"
+            class="fw-link">Cloudflare</a
+          >, <a href="https://vercel.com" target="_blank" class="fw-link"
+            >Vercel</a
+          >, <a href="https://www.netlify.com" target="_blank" class="fw-link"
+            >Netlify</a
+          >, <a href="https://nodejs.org" target="_blank" class="fw-link"
+            >Node</a
+          >, etc.). Stargazer's routes are SSR-only.
+        </p>
+      </blockquote>
+
+      <h3>Dark mode toggle not working</h3>
+      <p>CSS must respond to the method you configured:</p>
+      <ul>
+        <li>
+          <code>attribute</code>: <code>[color-scheme="dark"]</code> on <code
+            >&lt;html&gt;</code
+          >
+        </li>
+        <li><code>class</code>: <code>html.dark</code></li>
+        <li>
+          <code>data-theme</code>: <code>[data-theme="dark"]</code> on <code
+            >&lt;html&gt;</code
+          >
+        </li>
+      </ul>
+
+      <h3>Search bar not showing up</h3>
+      <p>
+        The search input only appears when there are <strong
+          >more than 4 components</strong
+        > registered.
+      </p>
+
+      <h3>Copy Props button doesn't work</h3>
+      <p>
+        The Clipboard API requires either <strong>HTTPS or localhost</strong>.
+        It won't work over plain HTTP on a network address.
+      </p>
+
+      <h3>Zoom buttons are not showing</h3>
+      <p>
+        Zoom only appears when the selected viewport is <strong>≤ 1024px</strong
+        >. At larger viewports there is no zoom.
+      </p>
+
+      <h3>Can I change the <code>/stargazer</code> URL?</h3>
+      <p>Yes. Set the <code>base</code> option in your config:</p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  base: '/preview',
+{'}'};</code></pre>
+
+      <h3>My site switched to hybrid output — will this break my build?</h3>
+      <p>
+        No. Stargazer temporarily switches <code>output</code> to <code
+          >hybrid</code
+        >
+        <strong>in memory during <code>astro dev</code></strong> so its SSR routes
+        work. This change is never written to your config file and does not affect
+        <code>astro build</code>.
+      </p>
+      <table>
+        <thead><tr><th>Command</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr
+            ><td><code>astro dev</code></td><td
+              >Stargazer active, output set to <code>hybrid</code> in memory only</td
+            ></tr
+          >
+          <tr
+            ><td><code>astro build</code></td><td
+              >Stargazer skipped entirely — your output stays <code>static</code
+              ></td
+            ></tr
+          >
+          <tr
+            ><td><code>astro build</code> + <code>buildable: true</code></td><td
+              >Stargazer included, output set to <code>hybrid</code>, <strong
+                >requires a server adapter</strong
+              ></td
+            ></tr
+          >
+        </tbody>
+      </table>
+
+      <h3>What adapter should I use with <code>buildable: true</code>?</h3>
+      <p>
+        Any official Astro adapter works: <code>@astrojs/cloudflare</code>, <code
+          >@astrojs/vercel</code
+        >, <code>@astrojs/netlify</code>, <code>@astrojs/node</code>. Configure
+        it as you normally would — Stargazer does not add any adapter-specific
+        code.
+      </p>
+      <p>
+        If your project currently uses <code>output: 'static'</code> with no adapter,
+        the simplest option for staging is <code>@astrojs/node</code> in standalone
+        mode. Or just leave <code>buildable</code> at its default <code
+          >false</code
+        > and use Stargazer in dev only.
+      </p>
+
+      <h3>Component shows an error page</h3>
+      <p>
+        The error boundary caught a failure. Read the error message shown in the
+        iframe, fix the component, click Reload.
+      </p>
+      <p>
+        If the error says <strong
+          ><code>Cannot read properties of undefined</code></strong
+        >, the component is trying to use a prop that wasn't passed. This is
+        common in <code>auto</code> mode. Fix by adding the required prop to <code
+          >defaults</code
+        >:
+      </p>
+      <pre><code>const config: StargazerConfig = {'{'} 
+  mode: 'auto',
+  defaults: {'{'} 
+    lang: 'en',   // fix: 'Cannot read properties of undefined (reading "contact")'
+  {'}'},
+{'}'};</code></pre>
+
+      <h3>Preview is blank but shows no error</h3>
+      <p>
+        The component probably renders no visible HTML — empty output,
+        whitespace only, or a <code>display: none</code> element. Check the component
+        itself and open the browser devtools inside the iframe to inspect.
+      </p>
+
+      <hr />
+
+      <p
+        style="text-align: center; color: var(--text-muted); margin-top: 48px; font-size: 13px;"
+      >
+        <a
+          href="https://github.com/webxtekagency/astro-stargazer/blob/main/LICENSE"
+          target="_blank"
+          class="fw-link">MIT</a
+        > © <a href="https://webxtek.com" target="_blank" class="fw-link"
+          >Webxtek</a
+        > · Built with <a
+          href="https://astro.build"
+          target="_blank"
+          class="fw-link">Astro</a
+        >
+      </p>
+    </main>
+
+    <button
+      class="scroll-up-btn"
+      id="scroll-up-btn"
+      aria-label="Scroll to top"
+      title="Scroll to top"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg
+      >
+    </button>
+
+    <script>
+      const links = document.querySelectorAll(".sidebar-link");
+      const sections: { el: HTMLElement; link: Element }[] = [];
+      links.forEach((link) => {
+        const href = link.getAttribute("href");
+        if (href && href.startsWith("#")) {
+          const el = document.getElementById(href.slice(1));
+          if (el) sections.push({ el, link });
+        }
+      });
+
+      function updateSpy() {
+        const scrollY = window.scrollY + 80;
+        let current = sections[0];
+        for (const s of sections) {
+          if (s.el.offsetTop <= scrollY) current = s;
+        }
+        if (current && !current.link.classList.contains("active")) {
+          links.forEach((l) => l.classList.remove("active"));
+          current.link.classList.add("active");
+          const sb = document.getElementById("docs-sidebar");
+          if (sb) {
+            const le = current.link as HTMLElement;
+            sb.scrollTo({
+              top: le.offsetTop - sb.clientHeight / 2,
+              behavior: "smooth",
+            });
+          }
+        }
+      }
+      window.addEventListener("scroll", updateSpy, { passive: true });
+      updateSpy();
+
+      const toggle = document.getElementById("sidebar-toggle");
+      const sidebar = document.getElementById("docs-sidebar");
+      if (toggle && sidebar) {
+        toggle.addEventListener("click", () =>
+          sidebar.classList.toggle("open"),
+        );
+        sidebar.addEventListener("click", (e: Event) => {
+          const target = e.target as HTMLElement;
+          if (target.classList.contains("sidebar-link")) {
+            sidebar.classList.remove("open");
+          }
+        });
+      }
+
+      const searchInput = document.getElementById(
+        "docs-search",
+      ) as HTMLInputElement | null;
+      const ddrop = document.getElementById("docs-search-dropdown");
+      if (searchInput && ddrop) {
+        type SearchItem = {
+          text: string;
+          id: string;
+          parent: string;
+          kind: "heading" | "body";
+        };
+        const items: SearchItem[] = [];
+        const mc = document.querySelector(".docs-content");
+        if (mc) {
+          let currentH2 = "";
+          let currentAnchorId = "";
+
+          mc.querySelectorAll("h2, h3, p, li").forEach((el) => {
+            const tag = el.tagName;
+
+            if (tag === "H2") {
+              const id = el.getAttribute("id");
+              const text = el.textContent?.trim() || "";
+              if (!id || !text) return;
+              currentH2 = text;
+              currentAnchorId = id;
+              items.push({ text, id, parent: "", kind: "heading" });
+            } else if (tag === "H3") {
+              const text = el.textContent?.trim() || "";
+              if (!text) return;
+              let id = el.getAttribute("id");
+              if (!id) {
+                id =
+                  "h3-" +
+                  text
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .slice(0, 40);
+                el.setAttribute("id", id);
+              }
+              currentAnchorId = id;
+              items.push({ text, id, parent: currentH2, kind: "heading" });
+            } else {
+              if (!currentAnchorId) return;
+              const text = (el.textContent?.trim() || "").replace(/\s+/g, " ");
+              if (text.length < 10) return;
+              items.push({
+                text,
+                id: currentAnchorId,
+                parent: currentH2,
+                kind: "body",
+              });
+            }
+          });
+        }
+
+        let hi = -1;
+        function render(q: string) {
+          const low = q.toLowerCase();
+          if (!low) {
+            ddrop!.classList.remove("open");
+            ddrop!.innerHTML = "";
+            return;
+          }
+
+          const headingMatches = items.filter(
+            (i) =>
+              i.kind === "heading" &&
+              (i.text.toLowerCase().includes(low) ||
+                i.parent.toLowerCase().includes(low)),
+          );
+
+          const headingIds = new Set(headingMatches.map((i) => i.id));
+          const bodyMatches: SearchItem[] = [];
+          const seenBodyIds = new Set<string>();
+          for (const i of items) {
+            if (i.kind !== "body") continue;
+            if (!i.text.toLowerCase().includes(low)) continue;
+            if (headingIds.has(i.id)) continue;
+            if (seenBodyIds.has(i.id)) continue;
+            seenBodyIds.add(i.id);
+            bodyMatches.push(i);
+          }
+
+          const m = [...headingMatches, ...bodyMatches];
+          hi = -1;
+          if (!m.length) {
+            ddrop!.classList.remove("open");
+            ddrop!.innerHTML = "";
+            return;
+          }
+
+          ddrop!.innerHTML = m
+            .map((x, i) => {
+              const snippet =
+                x.kind === "body"
+                  ? `<div class="docs-search-item-section">${x.parent || "Content"} — ${x.text.slice(0, 60)}…</div>`
+                  : x.parent
+                    ? `<div class="docs-search-item-section">${x.parent}</div>`
+                    : "";
+              return `<a class="docs-search-item" href="#${x.id}" data-i="${i}">${x.text}${snippet}</a>`;
+            })
+            .join("");
+          ddrop!.classList.add("open");
+        }
+        searchInput!.addEventListener("input", () =>
+          render(searchInput!.value),
+        );
+        searchInput!.addEventListener("keydown", (e: KeyboardEvent) => {
+          const els = ddrop!.querySelectorAll(".docs-search-item");
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            hi = Math.min(hi + 1, els.length - 1);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            hi = Math.max(hi - 1, 0);
+          } else if (e.key === "Enter" && hi >= 0 && els[hi]) {
+            e.preventDefault();
+            (els[hi] as HTMLAnchorElement).click();
+            ddrop!.classList.remove("open");
+            searchInput!.blur();
+            return;
+          } else if (e.key === "Escape") {
+            searchInput!.value = "";
+            ddrop!.classList.remove("open");
+            searchInput!.blur();
+            return;
+          } else return;
+          els.forEach((el, i) => el.classList.toggle("highlight", i === hi));
+        });
+        ddrop!.addEventListener("click", () => {
+          ddrop!.classList.remove("open");
+          searchInput!.value = "";
+        });
+        document.addEventListener("click", (e: Event) => {
+          if (!(e.target as HTMLElement).closest(".docs-search-wrap"))
+            ddrop!.classList.remove("open");
+        });
+        document.addEventListener("keydown", (e: KeyboardEvent) => {
+          if (
+            e.key === "/" &&
+            document.activeElement !== searchInput &&
+            !(document.activeElement as HTMLElement)?.matches?.(
+              "input,textarea",
+            )
+          ) {
+            e.preventDefault();
+            searchInput!.focus();
+          }
+        });
+      }
+      const scrollBtn = document.getElementById("scroll-up-btn");
+      if (scrollBtn) {
+        const getScrollY = () =>
+          window.scrollY ||
+          document.body.scrollTop ||
+          document.documentElement.scrollTop;
+        const onScroll = () => {
+          if (getScrollY() > 300) scrollBtn.classList.add("visible");
+          else scrollBtn.classList.remove("visible");
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        document.addEventListener("scroll", onScroll, { passive: true });
+        document.body.addEventListener("scroll", onScroll, { passive: true });
+        scrollBtn.addEventListener("click", () => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          document.body.scrollTo({ top: 0, behavior: "smooth" });
+          document.documentElement.scrollTop = 0;
+        });
+      }
+
+      function setTheme(theme: "light" | "dark") {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("stargazer-theme", theme);
+        document.querySelectorAll(".sg-theme-btn").forEach((b) => {
+          if (b.getAttribute("data-theme") === theme) b.classList.add("active");
+          else b.classList.remove("active");
+        });
+      }
+      (window as any).setTheme = setTheme;
+
+      const savedTheme = localStorage.getItem("stargazer-theme") as
+        | "light"
+        | "dark"
+        | null;
+      const prefersLight =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches;
+      setTheme(savedTheme || (prefersLight ? "light" : "dark"));
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "stargazer-theme" && e.newValue) {
+          setTheme(e.newValue as "light" | "dark");
+        }
+      });
+
+      function esc(s: string) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+      function highlightWords(plain: string) {
+        return esc(plain)
+          .replace(
+            /\b(export|default|import|from|const|let|var|function|return|if|else|for|while|class|extends|new|typeof|instanceof|async|await|try|catch|throw|type|interface|satisfies|in|of|as|true|false|null|undefined)\b/g,
+            (m) => {
+              if (/^(true|false|null|undefined)$/.test(m))
+                return `<span class="tok-boolean">${m}</span>`;
+              return `<span class="tok-keyword">${m}</span>`;
+            },
+          )
+          .replace(
+            /\b([A-Z][A-Za-z0-9_]+)\b/g,
+            '<span class="tok-type">$1</span>',
+          )
+          .replace(
+            /\b(\d+(?:\.\d+)?)\b/g,
+            '<span class="tok-number">$1</span>',
+          );
+      }
+      function highlightCode(text: string) {
+        const tok =
+          /(\/\/[^\n]*)|(\/\*[\s\S]*?\*\/)|(`[^`]*`|'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*")/g;
+        let result = "";
+        let last = 0;
+        let m: RegExpExecArray | null;
+        while ((m = tok.exec(text)) !== null) {
+          result += highlightWords(text.slice(last, m.index));
+          const raw = esc(m[0]);
+          if (m[1] || m[2]) result += `<span class="tok-comment">${raw}</span>`;
+          else result += `<span class="tok-string">${raw}</span>`;
+          last = tok.lastIndex;
+        }
+        result += highlightWords(text.slice(last));
+        return result;
+      }
+
+      document.querySelectorAll(".docs-content table").forEach((table) => {
+        const wrap = document.createElement("div");
+        wrap.className = "table-scroll";
+        table.parentNode?.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      });
+
+      document.querySelectorAll(".docs-content pre").forEach((pre) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "docs-pre-wrapper";
+        pre.parentNode?.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+        (pre as HTMLElement).style.overflow = "auto";
+        (pre as HTMLElement).style.height = "100%";
+
+        const header = document.createElement("div");
+        header.className = "docs-pre-header";
+
+        const code = pre.querySelector("code");
+        const rawText = code?.textContent?.trim() || "";
+
+        function detectLang(text: string) {
+          const first = text.split("\n")[0].trim();
+          if (
+            /^(npm|npx|pnpm|yarn|git|cd |ls |mkdir|cp |mv |rm |cat |echo |node |tsx? |astro )/.test(
+              first,
+            )
+          )
+            return "shell";
+          if (/^(#|\/\/\s*astro\.config|defineConfig|---\n)/.test(first))
+            return "typescript";
+          if (
+            /^\s*(import|export|const|let|var|interface|type |function|class |async )/.test(
+              text,
+            )
+          )
+            return "typescript";
+          if (/^([\w-]+:\s|---$)/.test(first)) return "yaml";
+          return "typescript";
+        }
+        const detectedLang = detectLang(rawText);
+
+        const lang = document.createElement("span");
+        lang.className = "docs-pre-lang";
+        lang.textContent = detectedLang;
+        header.appendChild(lang);
+
+        const btn = document.createElement("button");
+        btn.className = "copy-btn";
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> COPY`;
+        header.appendChild(btn);
+
+        wrapper.insertBefore(header, pre);
+
+        if (code) {
+          code.innerHTML = highlightCode(code.textContent || "");
+        }
+
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const codeEl = pre.querySelector("code");
+          if (!codeEl) return;
+          try {
+            await navigator.clipboard.writeText(codeEl.textContent || "");
+            btn.classList.add("copied");
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> COPIED`;
+            setTimeout(() => {
+              btn.classList.remove("copied");
+              btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> COPY`;
+            }, 2000);
+          } catch (e) {
+            console.error("Copy failed", e);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,87 @@
+---
+export const prerender = false;
+
+const { slug } = Astro.params;
+const origin = Astro.url.origin;
+
+let pathsData: any = null;
+let previewData: any = null;
+let darkModeConfig: any = {};
+
+try {
+  const [pathsRes, previewRes, regRes] = await Promise.all([
+    fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}`),
+    fetch(`${origin}/__stargazer/preview/${encodeURIComponent(slug!)}`),
+    fetch(`${origin}/__stargazer/registry.json`),
+  ]);
+  if (pathsRes.ok) pathsData = await pathsRes.json();
+  if (previewRes.ok) previewData = await previewRes.json();
+  if (regRes.ok) {
+    const reg = await regRes.json();
+    if (reg.config?.darkMode && typeof reg.config.darkMode === 'object') {
+      darkModeConfig = reg.config.darkMode;
+    }
+  }
+} catch { }
+
+if (!pathsData || pathsData.error || !previewData || previewData.error) {
+  return Astro.redirect('/stargazer');
+}
+
+const urlObj = Astro.url;
+const overrideLayout = urlObj.searchParams.get('overrideLayout') || '';
+const overridePropsRaw = urlObj.searchParams.get('overrideProps') || '';
+let overrideProps: Record<string, any> = {};
+if (overridePropsRaw) {
+  try { overrideProps = JSON.parse(decodeURIComponent(overridePropsRaw)); } catch { }
+}
+
+if (overrideLayout) {
+  try {
+    const overrideRes = await fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}?overrideLayout=${encodeURIComponent(overrideLayout)}`);
+    if (overrideRes.ok) pathsData = await overrideRes.json();
+  } catch { }
+}
+
+const props = { ...(previewData.props || {}), ...overrideProps };
+
+const cssLinks: string[] = pathsData.cssLinks || [];
+const darkModeConfigStr = JSON.stringify(darkModeConfig);
+
+const Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
+const Layout = pathsData.layoutFsUrl
+  ? (await import(/* @vite-ignore */ pathsData.layoutFsUrl)).default
+  : null;
+---
+
+{Layout ? (
+  <Layout {...props}>
+    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <Component {...props} />
+    <script is:inline define:vars={{ darkModeConfigStr }}>
+      window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
+    </script>
+    <script is:inline src="/__stargazer_controls.js"></script>
+  </Layout>
+) : (
+  <>
+    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <Component {...props} />
+    <script is:inline define:vars={{ darkModeConfigStr }}>
+      window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
+    </script>
+    <script is:inline src="/__stargazer_controls.js"></script>
+  </>
+)}
+
+<script>
+  function sgReportHeight() {
+    var h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+    if (h > 50) parent.postMessage({ type: 'sg-resize', height: h }, '*');
+  }
+  window.addEventListener('load', function() {
+    sgReportHeight();
+    setTimeout(sgReportHeight, 500);
+    setTimeout(sgReportHeight, 1500);
+  });
+</script>

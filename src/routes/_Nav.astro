@@ -1,0 +1,605 @@
+---
+interface NavLink {
+  label: string;
+  href: string;
+  target?: "_blank" | "_self";
+  highlight?: boolean;
+}
+interface Props {
+  basePath: string;
+  title: string;
+  catLink?: string;
+  catLabel?: string;
+  navLinks?: NavLink[];
+  themeEnabled?: boolean;
+}
+const {
+  basePath,
+  title,
+  catLink,
+  catLabel,
+  navLinks = [],
+  themeEnabled = false,
+} = Astro.props;
+---
+
+<style is:global>
+  @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Orbitron:wght@400..900&display=swap");
+
+  :root {
+    --sg-nav-height: 52px;
+    --sg-nav-bg: #08081a;
+    --sg-nav-border: rgba(221, 241, 96, 0.15);
+    --sg-nav-text: #ffffff;
+    --sg-nav-text-muted: rgba(255, 255, 255, 0.45);
+    --sg-nav-accent: #ddf160;
+    --sg-nav-sep: rgba(221, 241, 96, 0.25);
+    --sg-nav-group-bg: rgba(255, 255, 255, 0.04);
+    --sg-nav-group-border: rgba(255, 255, 255, 0.08);
+    --sg-btn-text: rgba(255, 255, 255, 0.35);
+    --sg-btn-hover-bg: rgba(255, 255, 255, 0.08);
+    --sg-btn-hover-text: #ffffff;
+    --sg-btn-active-bg: rgba(221, 241, 96, 0.15);
+    --sg-theme-btn-active-bg: #ddf160;
+    --sg-theme-btn-active-text: #08081a;
+  }
+  html[data-theme="light"] {
+    --sg-nav-bg: #ffffff;
+    --sg-nav-border: rgba(0, 0, 0, 0.08);
+    --sg-nav-text: rgba(0, 0, 0, 0.9);
+    --sg-nav-text-muted: rgba(0, 0, 0, 0.5);
+    --sg-nav-accent: #8a9600;
+    --sg-nav-sep: rgba(0, 0, 0, 0.1);
+    --sg-nav-group-bg: rgba(0, 0, 0, 0.04);
+    --sg-nav-group-border: rgba(0, 0, 0, 0.08);
+    --sg-btn-text: rgba(0, 0, 0, 0.5);
+    --sg-btn-hover-bg: rgba(0, 0, 0, 0.05);
+    --sg-btn-hover-text: rgba(0, 0, 0, 0.9);
+    --sg-btn-active-bg: rgba(138, 150, 0, 0.15);
+    --sg-theme-btn-active-bg: #8a9600;
+    --sg-theme-btn-active-text: #ffffff;
+  }
+
+  .sg-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    min-height: 52px;
+    height: auto;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    padding: 8px 24px;
+    gap: 0;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    overflow: visible;
+  }
+  html[data-theme="light"] .sg-nav {
+  }
+
+  /* Shared body background for all observer pages — subtle accent glow at top
+     so the frosted glass nav has visible content to be transparent against */
+  body.__sg-page {
+    background:
+      linear-gradient(180deg, rgba(221, 241, 96, 0.06) 0px, transparent 80px),
+      var(--sg-body-bg, #0d0d24) !important;
+  }
+  html[data-theme="light"] body.__sg-page {
+    background:
+      linear-gradient(180deg, rgba(138, 150, 0, 0.08) 0px, transparent 80px),
+      var(--sg-body-bg, #f8f9fa) !important;
+  }
+  .sg-nav-brand {
+    color: var(--sg-nav-text);
+    font-weight: 800;
+    font-size: 28px;
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    font-family: "Orbitron", monospace;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22em;
+    flex-shrink: 0;
+  }
+  .sg-nav-brand .sg-logo-icon {
+    width: 0.85em;
+    height: 0.85em;
+    display: block;
+    overflow: visible;
+    animation: navPulse 1.4s ease-in-out 2s infinite alternate;
+  }
+  @keyframes navPulse {
+    from {
+      filter: drop-shadow(0 0 0px #ddf160);
+      transform: scale(1);
+    }
+    to {
+      filter: drop-shadow(0 0 4px #ddf160);
+      transform: scale(1.15);
+    }
+  }
+  .sg-nav-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--sg-nav-sep);
+    margin: 0 12px;
+    flex-shrink: 0;
+  }
+  .sg-nav-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sg-nav-text);
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+    text-transform: uppercase;
+    font-family: "JetBrains Mono", monospace;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  .sg-nav-cat-link {
+    color: var(--sg-nav-text-muted) !important;
+    text-decoration: none !important;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .sg-nav-cat-link:hover,
+  .sg-nav-cat-link:visited,
+  .sg-nav-cat-link:active {
+    color: var(--sg-nav-text-muted) !important;
+    text-decoration: none !important;
+  }
+  .sg-nav-cat-link:hover {
+    color: var(--sg-nav-accent) !important;
+  }
+  .sg-nav-chevron {
+    color: var(--sg-nav-accent);
+    font-size: 13px;
+    font-weight: 400;
+    font-family: "JetBrains Mono", monospace;
+    font-style: normal;
+    opacity: 0.75;
+    line-height: 1;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .sg-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--sg-nav-group-bg);
+    border: 1px solid var(--sg-nav-group-border);
+    border-radius: 3px;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  .sg-vp-group {
+    margin-left: auto;
+  }
+  .sg-nav-trailing {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+  .sg-theme-group {
+    margin-left: 11px;
+  }
+
+  .sg-btn {
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    padding: 5px 9px;
+    border-radius: 2px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--sg-btn-text);
+    transition:
+      background 0.15s,
+      color 0.15s;
+    font-family: "JetBrains Mono", monospace;
+    white-space: nowrap;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sg-btn:hover {
+    color: var(--sg-btn-hover-text);
+    background: var(--sg-btn-hover-bg);
+  }
+  .sg-btn.active {
+    background: var(--sg-btn-active-bg);
+    color: var(--sg-nav-accent);
+  }
+  .sg-theme-btn.active {
+    background: var(--sg-theme-btn-active-bg);
+    color: var(--sg-theme-btn-active-text);
+  }
+  .sg-theme-btn[data-theme="light"].active,
+  #sg-btn-light.active {
+    background: var(--sg-theme-btn-active-bg);
+    color: var(--sg-theme-btn-active-text);
+  }
+  .sg-theme-label {
+    display: inline-block;
+    max-width: 36px;
+    opacity: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+      max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sg-theme-btn.active .sg-theme-label {
+    max-width: 0;
+    opacity: 0;
+  }
+  .sg-sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .sg-btn-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    display: block;
+  }
+  .sg-btn-icon path,
+  .sg-btn-icon rect,
+  .sg-btn-icon circle {
+    stroke: currentColor;
+    fill: none;
+  }
+  .sg-btn-icon.sg-icon-fill path {
+    fill: currentColor;
+    stroke: none;
+  }
+  .sg-btn-highlight {
+    background: rgba(255, 140, 66, 0.12) !important;
+    color: #ff8c42 !important;
+    border: 1px solid rgba(255, 140, 66, 0.35) !important;
+    border-radius: 2px;
+    padding: 8px 12px;
+    margin-left: 11px;
+  }
+  .sg-btn-highlight:hover {
+    background: rgba(255, 140, 66, 0.22) !important;
+    color: #ffab6b !important;
+  }
+  html[data-theme="light"] .sg-btn-highlight {
+    background: rgba(255, 140, 66, 0.1) !important;
+    color: #c06000 !important;
+    border-color: rgba(255, 140, 66, 0.45) !important;
+  }
+  html[data-theme="light"] .sg-btn-highlight:hover {
+    background: rgba(255, 140, 66, 0.18) !important;
+    color: #a05000 !important;
+  }
+
+  @media (max-width: 768px) {
+    :root {
+      --sg-nav-height: 132px;
+    }
+    .sg-zoom-group {
+      display: none !important;
+    }
+    .sg-vp-group {
+      margin-left: 0 !important;
+      flex-basis: 100% !important;
+      width: 100% !important;
+      justify-content: center !important;
+      padding: 4px 0 !important;
+    }
+    .sg-nav-trailing {
+      flex-basis: 100% !important;
+      width: 100% !important;
+      justify-content: center !important;
+      padding: 4px 0 !important;
+    }
+    .sg-nav {
+      row-gap: 6px !important;
+      padding: 8px 16px 10px !important;
+    }
+    .sg-vp-group {
+      gap: 2px;
+      width: 100%;
+    }
+    .sg-vp-group .sg-btn {
+      padding: 5px 4px;
+      gap: 4px;
+      font-size: 10px;
+      flex-grow: 1;
+      justify-content: center;
+    }
+  }
+
+  .sg-vp-group {
+    position: relative;
+  }
+
+  .sg-zoom-group {
+    position: absolute !important;
+    top: calc(100% + 10px);
+    right: 0;
+    width: auto !important;
+    max-width: unset !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 6px 10px !important;
+    background: rgba(8, 8, 26, 0.85) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(221, 241, 96, 0.2) !important;
+    border-radius: 8px !important;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(221, 241, 96, 0.06);
+    display: flex !important;
+    align-items: center;
+    gap: 2px;
+    z-index: 99999;
+    opacity: 0 !important;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px);
+    transition:
+      opacity 0.18s ease,
+      transform 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+      visibility 0.18s ease !important;
+  }
+
+  .sg-zoom-group::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 24px;
+    width: 10px;
+    height: 6px;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    background: rgba(221, 241, 96, 0.25);
+  }
+
+  .sg-zoom-group.show {
+    opacity: 1 !important;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  html[data-theme="light"] .sg-zoom-group {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(138, 150, 0, 0.25) !important;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(138, 150, 0, 0.08);
+  }
+  html[data-theme="light"] .sg-zoom-group::before {
+    background: rgba(138, 150, 0, 0.3);
+  }
+
+  @keyframes sgNavFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .sg-nav-anim {
+    animation: sgNavFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+</style>
+
+<nav class="sg-nav">
+  <a href={basePath} class="sg-nav-brand">
+    <svg
+      class="sg-logo-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9"
+        stroke="var(--sg-nav-accent)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    <span translate="no" class="notranslate">stargazer</span>
+  </a>
+  <div class="sg-nav-sep"></div>
+  <a
+    href={basePath}
+    class="sg-nav-cat-link"
+    style="margin-left: 0;"
+    aria-label="Observatory">Observatory</a
+  >
+  <span class="sg-nav-chevron" style="margin: 0 4px;">›</span>
+  {
+    catLink && catLabel ? (
+      <span class="sg-nav-title">
+        <a href={catLink} class="sg-nav-cat-link">
+          {catLabel}
+        </a>
+        <span class="sg-nav-chevron">›</span>
+        {title}
+      </span>
+    ) : catLink ? (
+      <span class="sg-nav-title">
+        <a href={catLink} class="sg-nav-cat-link">
+          {title}
+        </a>
+      </span>
+    ) : (
+      <span class="sg-nav-title">{title}</span>
+    )
+  }
+  <slot />
+  <div class="sg-nav-trailing">
+    {
+      themeEnabled && (
+        <div class="sg-btn-group sg-theme-group">
+          <button
+            class="sg-btn sg-theme-btn"
+            id="sg-btn-dark"
+            data-tip="DARK"
+            onclick="setTheme('dark')"
+          >
+            <svg
+              class="sg-btn-icon sg-icon-fill"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M3.39703 11.6315C3.39703 16.602 7.42647 20.6315 12.397 20.6315C15.6858 20.6315 18.5656 18.8664 20.1358 16.23C16.7285 17.3289 12.6922 16.7548 9.98282 14.0455C7.25201 11.3146 6.72603 7.28415 7.86703 3.89293C5.20697 5.47927 3.39703 8.38932 3.39703 11.6315ZM21.187 13.5851C22.0125 13.1021 23.255 13.6488 23 14.5706C21.7144 19.2187 17.4543 22.6315 12.397 22.6315C6.3219 22.6315 1.39703 17.7066 1.39703 11.6315C1.39703 6.58874 4.93533 2.25845 9.61528 0.999986C10.5393 0.751502 11.0645 1.99378 10.5641 2.80935C8.70026 5.84656 8.83194 10.0661 11.397 12.6312C13.9319 15.1662 18.1365 15.3702 21.187 13.5851Z"
+              />
+            </svg>
+            <span class="sg-theme-label">DARK</span>
+          </button>
+          <button
+            class="sg-btn sg-theme-btn"
+            id="sg-btn-light"
+            data-tip="LIGHT"
+            onclick="setTheme('light')"
+          >
+            <svg
+              class="sg-btn-icon sg-icon-fill"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M12 18A6 6 0 1 0 12 6a6 6 0 0 0 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"
+              />
+            </svg>
+            <span class="sg-theme-label">LIGHT</span>
+          </button>
+        </div>
+      )
+    }
+    {
+      navLinks.length > 0 && (
+        <>
+          {navLinks
+            .filter((l) => l.highlight)
+            .map((link) => (
+              <a
+                href={link.href}
+                target={link.target || "_self"}
+                class="sg-btn sg-btn-highlight"
+                style="text-decoration: none; display:inline-flex; align-items:center; gap:5px;"
+              >
+                {link.label === "BACK" ? (
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style="flex-shrink:0;"
+                  >
+                    <path
+                      d="M19 12H5M5 12L12 19M5 12L12 5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style="flex-shrink:0;"
+                  >
+                    <path
+                      d="M12 15L15 12M15 12L12 9M15 12H4M4 7.24802V7.2002C4 6.08009 4 5.51962 4.21799 5.0918C4.40973 4.71547 4.71547 4.40973 5.0918 4.21799C5.51962 4 6.08009 4 7.2002 4H16.8002C17.9203 4 18.4796 4 18.9074 4.21799C19.2837 4.40973 19.5905 4.71547 19.7822 5.0918C20 5.5192 20 6.07899 20 7.19691V16.8036C20 17.9215 20 18.4805 19.7822 18.9079C19.5905 19.2842 19.2837 19.5905 18.9074 19.7822C18.48 20 17.921 20 16.8031 20H7.19691C6.07899 20 5.5192 20 5.0918 19.7822C4.71547 19.5905 4.40973 19.2839 4.21799 18.9076C4 18.4798 4 17.9201 4 16.8V16.75"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+                {link.label}
+              </a>
+            ))}
+          {navLinks.some((l) => !l.highlight) && (
+            <>
+              <div class="sg-nav-sep" />
+              <div
+                class="sg-btn-group sg-nav-anim"
+                style="animation-delay:0.15s"
+              >
+                {navLinks
+                  .filter((l) => !l.highlight)
+                  .map((link) => (
+                    <a
+                      href={link.href}
+                      target={link.target || "_self"}
+                      class="sg-btn"
+                      style="text-decoration: none; display:inline-flex; align-items:center; gap:5px;"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+              </div>
+            </>
+          )}
+        </>
+      )
+    }
+  </div>
+</nav>
+
+<script is:inline>
+  (function () {
+    function syncNavHeight() {
+      var nav = document.querySelector(".sg-nav");
+      if (nav) {
+        document.documentElement.style.setProperty(
+          "--sg-nav-height",
+          nav.offsetHeight + "px",
+        );
+      }
+    }
+    syncNavHeight();
+    window.addEventListener("resize", syncNavHeight, { passive: true });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(syncNavHeight);
+    }
+    if (typeof ResizeObserver !== "undefined") {
+      var nav = document.querySelector(".sg-nav");
+      if (nav) {
+        new ResizeObserver(syncNavHeight).observe(nav);
+      }
+    }
+  })();
+</script>

@@ -1,0 +1,79 @@
+/**
+ * astro-stargazer - Example Configuration
+ *
+ * Copy this file to your project root as `stargazer.config.ts`
+ * and customize it for your components.
+ */
+
+import type { StargazerConfig } from 'astro-stargazer';
+
+const config: StargazerConfig = {
+  // -- Mode -------------------------------------------------------
+  // 'files'   : list your components manually in this config file (recommended for control)
+  // 'auto'    : auto-discover all .astro files in src/ (zero config!)
+  mode: 'files',
+
+  // Zero-config option: switch to 'auto' and remove the components list.
+  // Layouts, pages, and styles are excluded automatically.
+  // Optionally exclude more paths:
+  // exclude: ['src/partials'],
+
+  // -- Global Defaults --------------------------------------------
+  // Props applied to ALL components (unless overridden per component).
+  defaults: {
+    lang: 'en',
+  },
+
+  // -- Layouts ----------------------------------------------------
+  defaultLayout: 'main',
+  layouts: {
+    main: './src/layouts/Layout.astro',
+    // blog: './src/layouts/BlogLayout.astro',
+  },
+
+  // -- Base Route -------------------------------------------------
+  // URL path where Stargazer is accessible (default: '/stargazer').
+  // base: '/stargazer',
+
+  // -- Dark Mode Toggle -------------------------------------------
+  // Set to false to disable the dark/light toggle.
+  darkMode: {
+    method: 'attribute',        // 'attribute' | 'class' | 'data-theme'
+    // attribute: 'color-scheme', // (default: 'color-scheme')
+    // target: 'html',
+    // dark: 'dark',
+    // light: 'light',
+  },
+  // Tailwind CSS:   darkMode: { method: 'class' }
+  // DaisyUI/Pico:   darkMode: { method: 'data-theme' }
+  // Custom attr:    darkMode: { method: 'attribute', attribute: 'data-color-mode' }
+  // Disable toggle: darkMode: false
+
+  // -- Components -------------------------------------------------
+  // Used when mode is 'files'. List every component you want to preview.
+  components: [
+    {
+      name: 'Hero',
+      path: './src/components/Hero.astro',
+      description: 'Main landing page hero section',  // optional
+      // layout: 'main',       // overrides defaultLayout
+      // category: 'Marketing', // auto-detected from folder if omitted
+      // props: { title: 'Hello' },
+    },
+    {
+      name: 'Footer',
+      path: './src/components/Footer.astro',
+    },
+    // Example with variants:
+    // {
+    //   name: 'Button',
+    //   path: './src/components/Button.astro',
+    //   variants: [
+    //     { name: 'Primary', props: { variant: 'primary' } },
+    //     { name: 'Secondary', props: { variant: 'secondary' } },
+    //   ],
+    // },
+  ],
+};
+
+export default config;

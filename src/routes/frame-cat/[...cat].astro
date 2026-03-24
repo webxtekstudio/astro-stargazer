@@ -1,0 +1,171 @@
+---
+export const prerender = false;
+
+const catParam = decodeURIComponent(Astro.params.cat || '');
+const origin = Astro.url.origin;
+
+const overrideLayout = Astro.url.searchParams.get('overrideLayout') || '';
+const overridePropsRaw = Astro.url.searchParams.get('overrideProps') || '';
+let overrideProps: Record<string, any> = {};
+if (overridePropsRaw) {
+  try { overrideProps = JSON.parse(decodeURIComponent(overridePropsRaw)); } catch { }
+}
+
+let catComps: Array<{ slug: string; name: string }> = [];
+try {
+  const res = await fetch(`${origin}/__stargazer/render-category-meta/${encodeURIComponent(catParam)}`);
+  if (res.ok) catComps = await res.json();
+} catch { }
+
+let darkModeConfig: any = {};
+try {
+  const regRes = await fetch(`${origin}/__stargazer/registry.json`);
+  if (regRes.ok) {
+    const reg = await regRes.json();
+    if (reg.config?.darkMode && typeof reg.config.darkMode === 'object') {
+      darkModeConfig = reg.config.darkMode;
+    }
+  }
+} catch { }
+
+const componentItems: Array<{ slug: string; name: string; Component: any; props: any }> = [];
+let Layout: any = null;
+let cssLinks: string[] = [];
+
+for (const comp of catComps) {
+  try {
+    const pathsUrl = overrideLayout
+      ? `${origin}/__stargazer/paths/${comp.slug}?overrideLayout=${encodeURIComponent(overrideLayout)}`
+      : `${origin}/__stargazer/paths/${comp.slug}`;
+
+    const [pathsData, previewData] = await Promise.all([
+      fetch(pathsUrl).then(r => r.json()),
+      fetch(`${origin}/__stargazer/preview/${comp.slug}`).then(r => r.json()),
+    ]);
+
+    if (!Layout && pathsData.layoutFsUrl) {
+      Layout = (await import(/* @vite-ignore */ pathsData.layoutFsUrl)).default;
+    }
+    for (const url of (pathsData.cssLinks || [])) {
+      if (!cssLinks.includes(url)) cssLinks.push(url);
+    }
+
+    const Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
+    const props = { ...(previewData.props || {}), ...overrideProps };
+    componentItems.push({ slug: comp.slug, name: comp.name, Component, props });
+  } catch { }
+}
+
+const darkModeConfigStr = JSON.stringify(darkModeConfig);
+---
+
+{Layout ? (
+  <Layout>
+    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+
+    {componentItems.map(({ slug, name, Component, props }, i) => (
+      <div class="sg-section" data-slug={slug}>
+        <div class="sg-label">
+          <span class="sg-label__dot"></span>
+          {name}
+        </div>
+        <Component {...props} />
+        {i < componentItems.length - 1 && <div class="sg-divider" />}
+      </div>
+    ))}
+
+    <script is:inline define:vars={{ darkModeConfigStr }}>
+      window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
+    </script>
+    <script is:inline src="/__stargazer_controls.js"></script>
+    <script>
+      function sgReportHeight() {
+        var h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+        parent.postMessage({ type: 'sg-resize', height: h }, '*');
+      }
+      window.addEventListener('load', function() {
+        sgReportHeight();
+        setTimeout(sgReportHeight, 800);
+        setTimeout(sgReportHeight, 2000);
+      });
+    </script>
+  </Layout>
+) : (
+  <>
+    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    {componentItems.map(({ slug, name, Component, props }) => (
+      <div class="sg-section" data-slug={slug}>
+        <div class="sg-label">{name}</div>
+        <Component {...props} />
+      </div>
+    ))}
+  </>
+)}
+
+<style>
+  :root {
+    --sg-label-bg: rgba(8, 8, 26, 0.92);
+    --sg-label-text: rgba(221, 241, 96, 0.95);
+    --sg-label-border-right: rgba(221, 241, 96, 0.2);
+    --sg-label-border-bottom: rgba(221, 241, 96, 0.12);
+    --sg-label-dot: rgba(221, 241, 96, 0.8);
+    --sg-divider-start: rgba(221, 241, 96, 0.35);
+    --sg-divider-mid: rgba(221, 241, 96, 0.08);
+  }
+  html[data-theme="light"] {
+    --sg-label-bg: rgba(255, 255, 255, 0.92);
+    --sg-label-text: #8a9600;
+    --sg-label-border-right: rgba(0, 0, 0, 0.1);
+    --sg-label-border-bottom: rgba(0, 0, 0, 0.06);
+    --sg-label-dot: #8a9600;
+    --sg-divider-start: rgba(0, 0, 0, 0.15);
+    --sg-divider-mid: rgba(0, 0, 0, 0.05);
+  }
+
+  .sg-section {
+    position: relative;
+    width: 100%;
+  }
+
+  .sg-label {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--sg-label-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 18px 8px 14px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--sg-label-text);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-right: 1px solid var(--sg-label-border-right);
+    border-bottom: 1px solid var(--sg-label-border-bottom);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .sg-label__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sg-label-dot);
+    flex-shrink: 0;
+  }
+
+  .sg-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      var(--sg-divider-start) 0%,
+      var(--sg-divider-mid) 60%,
+      transparent 100%
+    );
+  }
+</style>
