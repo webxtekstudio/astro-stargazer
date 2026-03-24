@@ -21,12 +21,14 @@ let themeConfig: Record<string, any> = {};
 let compNavLinks: string[] = [];
 let basePath = '/stargazer';
 let navLinksConfig: any[] = [];
+let usingBuiltinLayout = false;
 
 try {
   const regRes = await fetch(new URL('/__stargazer/registry.json', Astro.url.origin).href);
   if (regRes.ok) {
     const regData = await regRes.json();
     basePath = regData.config?.base || '/stargazer';
+    usingBuiltinLayout = regData.config?.defaultLayout === '__sg_default';
     if (regData.config?.darkMode === false) {
       themeEnabled = false;
     } else if (regData.config?.darkMode && typeof regData.config.darkMode === 'object') {
@@ -34,12 +36,13 @@ try {
     }
     compNavLinks = (regData.components || []).map((c: any) => `${basePath}/${c.slug}`);
     navLinksConfig = Array.isArray(regData.config?.navLinks) ? regData.config.navLinks : [];
-    // On preview pages, override highlight link to BACK → observatory
     navLinksConfig = navLinksConfig.map((link: any) =>
       link.highlight ? { ...link, label: 'BACK', href: basePath } : link
     );
   }
 } catch { }
+
+const docsLink = `${basePath}/documentation`;
 
 const embedBase = `${basePath}/frame/${slug}`;
 const propsJson = JSON.stringify(preview.props || {});
@@ -95,6 +98,19 @@ const propsJson = JSON.stringify(preview.props || {});
       font-family: 'JetBrains Mono', monospace;
     }
     #sg-shortcut-hint span { color: #DDF160; }
+
+    .sg-builtin-warn {
+      position: fixed; top: var(--sg-nav-height, 52px); left: 0; right: 0;
+      z-index: 990; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: rgba(255, 200, 0, 0.07); border-bottom: 1px solid rgba(255, 200, 0, 0.2);
+      padding: 7px 16px; font-size: 11px; color: rgba(255, 200, 0, 0.85);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace; line-height: 1.4;
+    }
+    .sg-builtin-warn strong { font-weight: 600; color: rgba(255, 200, 0, 1); }
+    .sg-builtin-warn code { background: rgba(255,200,0,0.12); border-radius: 3px; padding: 1px 4px; }
+    .sg-builtin-warn a { color: rgba(221,241,96,0.9); text-decoration: none; margin-left: auto; white-space: nowrap; }
+    .sg-builtin-warn a:hover { color: #DDF160; text-decoration: underline; }
+    .sg-builtin-warn ~ .sg-iframe-container { top: calc(var(--sg-nav-height, 52px) + 34px); }
   </style>
 </head>
 <body class="__sg-page">
@@ -135,6 +151,13 @@ const propsJson = JSON.stringify(preview.props || {});
     </div>
 
   </Nav>
+
+  {usingBuiltinLayout && (
+    <div class="sg-builtin-warn">
+      <span>⚠ Using the <strong>Stargazer built-in layout</strong> — your project styles are not loaded. Components may look or behave differently than in your site. Add a layout in <code>src/layouts/</code> to fix this.</span>
+      <a href={docsLink}>Read the docs →</a>
+    </div>
+  )}
 
   <div class="sg-iframe-container">
     <iframe id="sg-frame" src={embedBase}></iframe>

@@ -117,6 +117,14 @@ export default function stargazer(
         `);
             },
             'astro:server:setup': async ({ server, logger }) => {
+                async function ssrImport(path: string): Promise<any> {
+                    const ssrRunner = (server as any).environments?.ssr?.runner;
+                    if (ssrRunner?.import) {
+                        try { return await ssrRunner.import(path); } catch { }
+                    }
+                    if ((server as any).environments) return {};
+                    return (server as any).ssrLoadModule(path);
+                }
                 const controlsPath = join(pkgRoot, 'src', 'client', 'controls.js');
                 const viteRoot: string = (server.config as any)?.root ?? projectRoot;
                 const configFile = findConfigFile(viteRoot);
@@ -125,7 +133,7 @@ export default function stargazer(
                     if (configFile) {
                         try {
                             const normalizedPath = normalizePath(configFile);
-                            const mod = await server.ssrLoadModule(normalizedPath);
+                            const mod = await ssrImport(normalizedPath);
                             fileConfig = (mod.default || mod) as StargazerConfig;
                         } catch (e) {
                             logger.error(`[stargazer] Failed to load config at ${configFile}: ${e}`);
@@ -168,6 +176,24 @@ export default function stargazer(
                                 }
                             }
                         } catch { }
+                    }
+                    if (!config.defaultLayout) {
+                        const keys = Object.keys(config.layouts);
+                        if (keys.length === 1) {
+                            config.defaultLayout = keys[0];
+                            logger.info(`[stargazer] Auto-detected default layout: "${config.defaultLayout}"`);
+                        }
+                    }
+                    if (!config.defaultLayout && Object.keys(config.layouts).length === 0) {
+                        const builtinPath = normalizePath(
+                            join(pkgRoot, 'src', 'layouts', 'stargazer-default.astro')
+                        );
+                        config.layouts['__sg_default'] = builtinPath;
+                        config.defaultLayout = '__sg_default';
+                        if (!config.darkMode) {
+                            config.darkMode = { method: 'data-theme', dark: 'dark', light: 'light' };
+                        }
+                        logger.info(`[stargazer] No layout found — using built-in preview layout.`);
                     }
                     resolvedComponents = scanComponents(config, viteRoot);
                 }
@@ -238,7 +264,7 @@ export default function stargazer(
                         }
                         const cssLinks = layoutAbs ? parseCssImports(layoutAbs) : [];
                         try {
-                            await server.ssrLoadModule(compAbs);
+                            await ssrImport(compAbs);
                             const compMods = (server as any).moduleGraph.getModulesByFile(compAbs);
                             if (compMods) {
                                 for (const mod of compMods) {
@@ -261,6 +287,7 @@ export default function stargazer(
                             compFsUrl: `/@fs/${compAbs}`,
                             layoutFsUrl: layoutAbs ? `/@fs/${layoutAbs}` : null,
                             cssLinks,
+                            darkMode: config.darkMode || {},
                         }));
                         return;
                     }
@@ -301,7 +328,7 @@ export default function stargazer(
                         if (debounce) clearTimeout(debounce);
                         debounce = setTimeout(async () => {
                             try {
-                                await server.ssrLoadModule(configFile + `?t=${Date.now()}`);
+                                await ssrImport(configFile + `?t=${Date.now()}`);
                                 await loadAndScan();
                                 server.ws.send({ type: 'full-reload', path: '*' });
                                 logger.info(`Config reloaded — ${resolvedComponents.length} component(s).`);

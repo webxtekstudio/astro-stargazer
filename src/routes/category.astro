@@ -21,7 +21,6 @@ try {
       themeConfig = regData.config.darkMode;
     }
     navLinksConfig = Array.isArray(regData.config?.navLinks) ? regData.config.navLinks : [];
-    // On category/view-all pages, override highlight link to BACK → observatory
     navLinksConfig = navLinksConfig.map((link: any) =>
       link.highlight ? { ...link, label: 'BACK', href: basePath } : link
     );

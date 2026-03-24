@@ -9,19 +9,17 @@ let previewData: any = null;
 let darkModeConfig: any = {};
 
 try {
-  const [pathsRes, previewRes, regRes] = await Promise.all([
+  const [pathsRes, previewRes] = await Promise.all([
     fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}`),
     fetch(`${origin}/__stargazer/preview/${encodeURIComponent(slug!)}`),
-    fetch(`${origin}/__stargazer/registry.json`),
   ]);
-  if (pathsRes.ok) pathsData = await pathsRes.json();
-  if (previewRes.ok) previewData = await previewRes.json();
-  if (regRes.ok) {
-    const reg = await regRes.json();
-    if (reg.config?.darkMode && typeof reg.config.darkMode === 'object') {
-      darkModeConfig = reg.config.darkMode;
+  if (pathsRes.ok) {
+    pathsData = await pathsRes.json();
+    if (pathsData.darkMode && typeof pathsData.darkMode === 'object') {
+      darkModeConfig = pathsData.darkMode;
     }
   }
+  if (previewRes.ok) previewData = await previewRes.json();
 } catch { }
 
 if (!pathsData || pathsData.error || !previewData || previewData.error) {
@@ -48,13 +46,32 @@ const props = { ...(previewData.props || {}), ...overrideProps };
 const cssLinks: string[] = pathsData.cssLinks || [];
 const darkModeConfigStr = JSON.stringify(darkModeConfig);
 
-const Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
-const Layout = pathsData.layoutFsUrl
-  ? (await import(/* @vite-ignore */ pathsData.layoutFsUrl)).default
-  : null;
+let Component: any = null;
+let Layout: any = null;
+let loadError: string | null = null;
+
+try {
+  Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
+} catch (e: any) {
+  loadError = `Failed to load component: ${e?.message || e}`;
+}
+
+if (!loadError && pathsData.layoutFsUrl) {
+  try {
+    Layout = (await import(/* @vite-ignore */ pathsData.layoutFsUrl)).default;
+  } catch (e: any) {
+    loadError = `Failed to load layout: ${e?.message || e}`;
+  }
+}
 ---
 
-{Layout ? (
+{loadError ? (
+  <div style="font-family: monospace; padding: 2rem; color: #ff6b6b; background: #1a1a2e; min-height: 100vh; box-sizing: border-box;">
+    <strong style="display: block; margin-bottom: 0.5rem; font-size: 1.1rem;">⚠ Preview Error</strong>
+    <code style="white-space: pre-wrap; font-size: 0.85rem; opacity: 0.9;">{loadError}</code>
+    <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.6;">Fix the error above or add missing props via <code>defaults</code> in your stargazer config.</p>
+  </div>
+) : Layout && Component ? (
   <Layout {...props}>
     {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
     <Component {...props} />
@@ -63,7 +80,7 @@ const Layout = pathsData.layoutFsUrl
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
   </Layout>
-) : (
+) : Component ? (
   <>
     {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
     <Component {...props} />
@@ -72,7 +89,7 @@ const Layout = pathsData.layoutFsUrl
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
   </>
-)}
+) : null}
 
 <script>
   function sgReportHeight() {

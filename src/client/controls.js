@@ -54,8 +54,25 @@
         applyThemeToDocument(current);
       }
     });
-    return;
-  }
+
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      try {
+        if (typeof gsap !== 'undefined') {
+          gsap.globalTimeline.progress(1);
+          if (typeof ScrollTrigger !== 'undefined') {
+            ScrollTrigger.getAll().forEach(function (t) { t.progress(1); });
+          }
+        }
+      } catch (e) { }
+      document.querySelectorAll('[style*="opacity: 0"]').forEach(function (el) {
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('transform');
+      });
+    }, 600);
+  });
+  return;
+}
 
 
   var _currentVp = 'full';

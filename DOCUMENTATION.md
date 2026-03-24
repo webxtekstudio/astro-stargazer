@@ -74,10 +74,13 @@ All great tools. But none of them are built **for Astro**, and most come with se
 
 | Requirement | Version |
 |---|---|
-| Astro | **≥ 4.9.0** |
+| Astro | **≥ 4.9.0** (including Astro 5 and Astro 6) |
 | Node.js | **≥ 18.0.0** |
 
 > Framework components (React, Vue, Svelte, Solid…) work out of the box if you already have them set up in your Astro project — no extra config needed.
+
+> [!NOTE]
+> v1.4.0 adds full compatibility with **Astro 6 / Vite 7**, including support for the `@astrojs/cloudflare` adapter. Previous versions crashed on startup when the Cloudflare adapter was active.
 
 ---
 
@@ -107,22 +110,20 @@ export default defineConfig({
 });
 ```
 
-### Create your config
+### Create your config (optional)
 
-Use the `defineConfig` helper for full IDE autocomplete (no runtime cost):
+Use `stargazer.config.ts` for advanced options like variants, per-directory layouts, or custom nav links. For basic usage, no config file is needed:
 
 ```ts
-// stargazer.config.ts
+// stargazer.config.ts (optional)
 import { defineConfig } from 'astro-stargazer';
 
 export default defineConfig({
-  mode: 'auto',
-  defaultLayout: 'main',
-  layouts: { main: './src/layouts/Layout.astro' },
+  defaults: { lang: 'en' },
 });
 ```
 
-Or run the setup wizard:
+Or run the setup wizard if you prefer:
 
 ```bash
 npx create-stargazer
@@ -228,45 +229,25 @@ export default config;
 
 ### Auto Mode (recommended for new projects)
 
-Zero config. Stargazer recursively scans `src/` and discovers all `.astro` files. Layouts, pages and styles are excluded by default. Component and layout discovery happens at *runtime* — if you create a new component or drop a new layout inside `/src/layouts/`, refresh the browser and Stargazer picks it up instantly without restarting the dev server.
+**Zero config.** Just install and run. Stargazer recursively scans `src/` and discovers all `.astro` files. Layouts, pages and styles are excluded by default. Component and layout discovery happen at *runtime* — create a new component or drop a new layout inside `/src/layouts/`, refresh the browser and Stargazer picks it up instantly without restarting.
 
-```ts
-const config: StargazerConfig = {
-  mode: 'auto',
-  defaultLayout: 'main',
-  layouts: { main: './src/layouts/Layout.astro' },
-};
+```js
+// astro.config.mjs
+import stargazer from 'astro-stargazer';
+export default defineConfig({
+  integrations: [stargazer()],
+});
 ```
 
-To exclude extra paths:
+That's it. No `stargazer.config.ts` needed.
 
-```ts
-const config: StargazerConfig = {
-  mode: 'auto',
-  exclude: ['src/partials', 'src/blocks/internal'],
-};
-```
+#### Layout auto-detection
 
-#### Auto mode + multiple layouts (`layoutMap`)
+Stargazer automatically picks up layouts from `src/layouts/`:
 
-If your project has more than one layout, use `layoutMap` to assign layouts by directory. More specific paths win.
-
-```ts
-const config: StargazerConfig = {
-  mode: 'auto',
-  defaultLayout: 'main',
-  layouts: {
-    main: './src/layouts/Layout.astro',
-    blog: './src/layouts/BlogLayout.astro',
-  },
-  layoutMap: {
-    'src/components/blog': 'blog',   // blog components → BlogLayout
-    'src/components': 'main',        // everything else → Layout
-  },
-};
-```
-
-If a component's path doesn't match any `layoutMap` entry, `defaultLayout` is used.
+- **Single layout found** → used automatically as the default. No config needed.
+- **Multiple layouts found** → set `defaultLayout` to choose the default.
+- **No layouts** → the built-in Stargazer preview layout is used as a fallback (see [Layout Wrapping](#layout-wrapping)).
 
 #### Auto mode + global defaults
 
@@ -276,16 +257,40 @@ Most projects have components that require common props like `lang`, `theme`, or
 const config: StargazerConfig = {
   mode: 'auto',
   defaults: {
-    lang: 'en',           // required by any component that uses routes[lang]
+    lang: 'en',
     theme: 'default',
   },
-  defaultLayout: 'main',
-  layouts: { main: './src/layouts/Layout.astro' },
 };
 ```
 
 > [!IMPORTANT]
-> In `auto` mode, components that require props but don't receive them will throw a runtime error in the preview. Add any required props to `defaults` to fix this.
+> In `auto` mode, components that require props but don't receive them will throw a runtime error in the preview. The error is shown inline in the preview frame. Add any required props to `defaults` to fix this.
+
+#### Auto mode + multiple layouts (`layoutMap`)
+
+If your project has more than one layout, use `layoutMap` to assign layouts by directory:
+
+```ts
+const config: StargazerConfig = {
+  defaultLayout: 'main',
+  layouts: {
+    main: './src/layouts/Layout.astro',
+    blog: './src/layouts/BlogLayout.astro',
+  },
+  layoutMap: {
+    'src/components/blog': 'blog',
+    'src/components': 'main',
+  },
+};
+```
+
+To exclude extra paths:
+
+```ts
+const config: StargazerConfig = {
+  exclude: ['src/partials', 'src/blocks/internal'],
+};
+```
 
 **Best for:** Quick start, solo projects, when you want everything visible.
 
@@ -393,7 +398,18 @@ const config: StargazerConfig = {
 
 Components often need their parent layout for correct rendering — global CSS, navigation, fonts, etc.
 
-### Setup
+### Layout Resolution Order
+
+Stargazer resolves which layout to use in this order:
+
+1. **Explicit per-component `layout` key** (in config or override editor)
+2. **`defaultLayout`** from your config
+3. **Auto-detected** — if your project has exactly one file in `src/layouts/`, it's used automatically
+4. **Built-in fallback** — if no layouts exist, Stargazer uses its own minimal preview layout with dark/light mode support
+
+When using the built-in fallback, a warning banner appears below the nav bar in the preview, reminding you that your project styles are not loaded.
+
+### Custom Layout Setup
 
 ```ts
 const config: StargazerConfig = {
@@ -404,13 +420,8 @@ const config: StargazerConfig = {
   },
   components: [
     { name: 'Hero', path: './src/components/Hero.astro' },
-    // uses 'main' layout (from defaultLayout)
-
     { name: 'Blog Card', path: './src/components/BlogCard.astro', layout: 'blog' },
-    // uses 'blog' layout (override)
-
     { name: 'Icon', path: './src/components/Icon.astro', layout: undefined },
-    // no layout — renders standalone
   ],
 };
 ```
@@ -422,11 +433,10 @@ const config: StargazerConfig = {
 ### The `isStargazer` Prop
 
 Stargazer automatically injects `{ isStargazer: true }` into the `Astro.props` of your Layout when rendering a component preview.
-This allows you to easily hide giant footers, disruptive accessible skip-links, or heavy global UI elements from your isolated component previews, without writing complex CSS overrides:
+This allows you to hide elements that don't make sense in isolation:
 
 ```astro
 ---
-// src/layouts/Layout.astro
 const { isStargazer } = Astro.props;
 ---
 <html lang="en">
@@ -437,6 +447,19 @@ const { isStargazer } = Astro.props;
   </body>
 </html>
 ```
+
+### Dark Mode with Custom Layouts
+
+When using your own layout, configure the `darkMode` option to match how your layout applies themes. The Stargazer controls will then correctly switch themes in the preview:
+
+```ts
+// astro.config.mjs or stargazer.config.ts
+stargazer({
+  darkMode: { method: 'attribute', attribute: 'color-scheme' },
+});
+```
+
+See the [Dark Mode](#dark-mode) section for all options.
 
 ---
 
@@ -450,17 +473,7 @@ Stargazer handles CSS automatically:
 | Global CSS imported in a layout | ✅ With layout | Parsed from the layout file and injected as `<link>` tags |
 | Global CSS not in a layout | ❌ | Only exists if the layout imports it |
 
-**The fix:** Always set a `defaultLayout` that imports your global stylesheet. Components without a layout show `⚠ no layout` in the index — a reminder that global styles may be missing.
-
-```ts
-// src/layouts/Layout.astro  — imports global.css
----
-import '../styles/global.css';
----
-<slot />
-```
-
-> **How it works under the hood:** When a component is requested for preview, Stargazer calls `ssrLoadModule` on the component file. This populates Vite's module graph with the component's scoped style modules (`?astro&type=style`). Stargazer then traverses the module graph to collect these URLs and injects them as `<link>` tags alongside the layout's global CSS imports.
+If you're using the built-in Stargazer layout (no user layouts configured), your project's global styles are **not** loaded. The preview will show a warning. To fix this, add your own layout to `src/layouts/` — Stargazer will detect it automatically.
 
 ---
 
@@ -630,8 +643,10 @@ Fix the error in your component and click Reload.
 
 ### Styles missing in preview
 
-- Set `defaultLayout` to a layout that imports your global CSS
-- Components without a layout show `⚠ no layout` in the index
+- If you see a **yellow warning banner** in the preview, you're using the built-in Stargazer layout and your project styles are not loaded
+- Add a layout file to `src/layouts/` — Stargazer detects it automatically
+- Or configure `defaultLayout` explicitly in your config
+- Use `isStargazer` in your layout to hide elements that don't make sense in isolation
 
 ### Layout not wrapping correctly
 

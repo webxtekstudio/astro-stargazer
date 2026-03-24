@@ -1103,23 +1103,19 @@ const basePath: string = data.config?.base || "/stargazer";
       <table>
         <thead><tr><th>Requirement</th><th>Version</th></tr></thead>
         <tbody>
-          <tr><td>Astro</td><td><strong>≥ 4.9.0</strong></td></tr>
+          <tr><td>Astro</td><td><strong>≥ 4.9.0</strong> (Astro 5 &amp; 6 ✅)</td></tr>
           <tr><td>Node.js</td><td><strong>≥ 18.0.0</strong></td></tr>
         </tbody>
       </table>
       <blockquote>
         <p>
-          Framework components (<a
-            href="https://react.dev"
-            target="_blank"
-            class="fw-link">React</a
-          >, <a href="https://vuejs.org" target="_blank" class="fw-link">Vue</a
-          >, <a href="https://svelte.dev" target="_blank" class="fw-link"
-            >Svelte</a
-          >, <a href="https://www.solidjs.com" target="_blank" class="fw-link"
-            >Solid</a
-          >…) work out of the box if you already have them set up in your Astro
+          Framework components (React, Vue, Svelte, Solid…) work out of the box if you already have them set up in your Astro
           project — no extra config needed.
+        </p>
+      </blockquote>
+      <blockquote>
+        <p>
+          <strong>v1.4.0:</strong> Full compatibility with <strong>Astro 6 / Vite 7</strong>, including <code>@astrojs/cloudflare</code>. Previous versions crashed on startup when the Cloudflare adapter was active.
         </p>
       </blockquote>
 
@@ -1142,25 +1138,23 @@ export default defineConfig({'{'}
   integrations: [stargazer()]
 {'}'});</code></pre>
 
-      <h3>2. Create your config</h3>
+      <h3>2. Create your config (optional)</h3>
       <p>
-        Use <code>defineConfig</code> from <code>astro-stargazer</code> for full IDE
-        autocomplete (zero runtime cost):
+        No config file needed for basic usage. Stargazer auto-detects layouts from <code>src/layouts/</code>.
+        For advanced options (variants, defaults, layout mapping), create <code>stargazer.config.ts</code>:
       </p>
-      <pre><code>// stargazer.config.ts
+      <pre><code>// stargazer.config.ts (optional)
 import {'{'} defineConfig {'}'} from 'astro-stargazer';
 
-export default defineConfig({'{'} 
-  mode: 'auto',
-  defaultLayout: 'main',
-  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
+export default defineConfig({'{'}
+  defaults: {'{'} lang: 'en' {'}'},
 {'}'});</code></pre>
       <p>Or run the setup wizard to generate it interactively:</p>
       <pre><code>npx create-stargazer</code></pre>
       <p>Or list components manually with <code>mode: 'files'</code>:</p>
       <pre><code>import {'{'} defineConfig {'}'} from 'astro-stargazer';
 
-export default defineConfig({'{'} 
+export default defineConfig({'{'}
   mode: 'files',
   components: [
     {'{'} name: 'Hero', path: './src/components/Hero.astro', description: 'Landing hero section' {'}'},
@@ -1348,30 +1342,36 @@ export default config;</code></pre>
 
       <h3>Auto Mode (recommended for new projects)</h3>
       <p>
-        Zero config. Stargazer recursively scans <code>src/</code> and discovers all
+        <strong>Zero config.</strong> Just install and run — no <code>stargazer.config.ts</code> needed.
+        Stargazer recursively scans <code>src/</code> and discovers all
         <code>.astro</code> files. Layouts, pages and styles are excluded by default.
         Component and layout discovery happens at <em>runtime</em> — create a new
         component, refresh the browser, and Stargazer picks it up instantly.
       </p>
-      <pre><code>const config: StargazerConfig = {'{'} 
-  mode: 'auto',
-  defaultLayout: 'main',
-  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
-{'}'};</code></pre>
+      <pre><code>// astro.config.mjs — that's all you need
+integrations: [stargazer()]</code></pre>
+
+      <h4>Layout auto-detection</h4>
+      <p>Stargazer resolves layouts in this order:</p>
+      <ol>
+        <li><strong>Explicit <code>layout</code> key</strong> on a component or override editor</li>
+        <li><strong><code>defaultLayout</code></strong> from your config</li>
+        <li><strong>Auto-detected</strong> — if your project has exactly one <code>src/layouts/*.astro</code>, it's used automatically</li>
+        <li><strong>Built-in fallback</strong> — if no layouts exist, Stargazer uses its own minimal preview layout. A warning banner appears in the preview.</li>
+      </ol>
 
       <h4>Auto mode + multiple layouts (<code>layoutMap</code>)</h4>
       <p>
         If your project has more than one layout, use <code>layoutMap</code> to assign
         layouts by directory. More specific paths win.
       </p>
-      <pre><code>const config: StargazerConfig = {'{'} 
-  mode: 'auto',
+      <pre><code>const config: StargazerConfig = {'{'}
   defaultLayout: 'main',
-  layouts: {'{'} 
+  layouts: {'{'}
     main: './src/layouts/Layout.astro',
     blog: './src/layouts/BlogLayout.astro',
   {'}'},
-  layoutMap: {'{'} 
+  layoutMap: {'{'}
     'src/components/blog': 'blog',
     'src/components': 'main',
   {'}'},
@@ -1385,20 +1385,17 @@ export default config;</code></pre>
           >defaults</code
         > to pass them to every component automatically:
       </p>
-      <pre><code>const config: StargazerConfig = {'{'} 
-  mode: 'auto',
-  defaults: {'{'} 
+      <pre><code>const config: StargazerConfig = {'{'}
+  defaults: {'{'}
     lang: 'en',
     theme: 'default',
   {'}'},
-  defaultLayout: 'main',
-  layouts: {'{'} main: './src/layouts/Layout.astro' {'}'},
 {'}'};</code></pre>
       <blockquote>
         <p>
           <strong>Important:</strong> In <code>auto</code> mode, components that require
           props but don't receive them will throw a runtime error in the preview.
-          Add any required props to <code>defaults</code> to fix this.
+          The error is shown inline in the preview frame. Add any required props to <code>defaults</code> to fix this.
         </p>
       </blockquote>
 

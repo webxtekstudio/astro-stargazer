@@ -1884,7 +1884,6 @@ const componentsJson = JSON.stringify(
             const COMPS = JSON.parse(componentsJson);
             const STORAGE_KEY = "sg:overrides";
 
-            // Theme toggle
             (function() {
               function sgSetTheme(t) {
                 document.documentElement.setAttribute('data-theme', t);
@@ -1898,7 +1897,6 @@ const componentsJson = JSON.stringify(
                   sgSetTheme(btn.getAttribute('data-theme'));
                 });
               });
-              // Init active state
               var t = localStorage.getItem('sg-theme') || document.documentElement.getAttribute('data-theme') || 'dark';
               document.documentElement.setAttribute('data-theme', t);
               document.querySelectorAll('[data-theme]').forEach(function(btn) {
@@ -1946,6 +1944,7 @@ const componentsJson = JSON.stringify(
                                       .pop() || effectiveLayoutKey;
                             activeMetaEl.textContent = "\u229e " + layoutFile;
                             activeMetaEl.classList.remove("card-no-layout");
+                            activeMetaEl.removeAttribute("data-tip");
                         } else {
                             const comp = COMPS.find((c) => c.slug === slug);
                             const configKey = comp?.layoutKey || "";
@@ -1958,6 +1957,7 @@ const componentsJson = JSON.stringify(
                                         : LAYOUTS[configKey].split("/").pop() ||
                                           configKey);
                                 activeMetaEl.classList.remove("card-no-layout");
+                                activeMetaEl.removeAttribute("data-tip");
                             } else {
                                 activeMetaEl.textContent = "\u26a0 no layout";
                                 activeMetaEl.classList.add("card-no-layout");
@@ -2016,6 +2016,7 @@ const componentsJson = JSON.stringify(
                                   effLayout;
                             catMeta.textContent = "\u229e " + layoutFile;
                             catMeta.classList.remove("card-no-layout");
+                            catMeta.removeAttribute("data-tip");
                         } else {
                             const compsInCat = COMPS.filter(
                                 (c) =>
@@ -2036,6 +2037,7 @@ const componentsJson = JSON.stringify(
                                               .split("/")
                                               .pop() || fallbackKey);
                                 catMeta.classList.remove("card-no-layout");
+                                catMeta.removeAttribute("data-tip");
                             } else {
                                 catMeta.textContent = "— auto —";
                                 catMeta.classList.add("card-no-layout");
