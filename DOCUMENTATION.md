@@ -566,17 +566,22 @@ Every category on the index page has a **View All** link. Clicking it opens `/st
 
 ## Keyboard Shortcuts
 
-Available on any preview page:
+Available on any preview page. A **shortcut hint bar** appears at the bottom-center of the screen when you move your cursor near the bottom edge.
 
 | Key | Action |
 |---|---|
 | `F` | Switch to FULL viewport |
+| `1` | Switch to 2560px viewport |
+| `2` | Switch to 1440px viewport |
+| `3` | Switch to 1024px viewport |
+| `4` | Switch to 780px viewport |
+| `5` | Switch to 390px viewport |
+| `+` / `=` | Zoom in (only when viewport ≤ 1024px) |
+| `-` | Zoom out (only when viewport ≤ 1024px) |
 | `D` | Switch to DARK theme |
 | `L` | Switch to LIGHT theme |
-| `1` | Zoom 100% |
-| `2` | Zoom 75% |
-| `3` | Zoom 50% |
-| `4` | Zoom 25% |
+| `R` | Reload the component frame |
+| `C` | Copy component props as JSON |
 | `←` | Navigate to previous component |
 | `→` | Navigate to next component |
 | `/` | Focus search input (index only) |

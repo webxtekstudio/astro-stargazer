@@ -210,6 +210,7 @@
   document.addEventListener('keydown', function (e) {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
 
+    var zoomLevels = [1, 0.75, 0.5, 0.25];
     var zoomActive = _currentVp !== 'full' && _currentVp <= 1024;
 
     switch (e.key) {
@@ -226,16 +227,32 @@
         if (document.getElementById('sg-btn-light')) window.setTheme('light');
         break;
       case '1':
-        if (zoomActive) window.setZoom(1);
+        window.setViewport(2560);
         break;
       case '2':
-        if (zoomActive) window.setZoom(0.75);
+        window.setViewport(1440);
         break;
       case '3':
-        if (zoomActive) window.setZoom(0.5);
+        window.setViewport(1024);
         break;
       case '4':
-        if (zoomActive) window.setZoom(0.25);
+        window.setViewport(780);
+        break;
+      case '5':
+        window.setViewport(390);
+        break;
+      case '+':
+      case '=':
+        if (zoomActive) {
+          var zi = zoomLevels.indexOf(_currentZoom);
+          if (zi > 0) window.setZoom(zoomLevels[zi - 1]);
+        }
+        break;
+      case '-':
+        if (zoomActive) {
+          var zo = zoomLevels.indexOf(_currentZoom);
+          if (zo < zoomLevels.length - 1) window.setZoom(zoomLevels[zo + 1]);
+        }
         break;
       case 'ArrowLeft':
         e.preventDefault();
@@ -272,14 +289,7 @@
 
   window.addEventListener('resize', applyTransform);
 
-  function showShortcutHint() {
-    var el = document.getElementById('sg-shortcut-hint');
-    if (!el) return;
-    el.style.opacity = '1';
-    setTimeout(function () {
-      el.style.opacity = '0';
-    }, 2000);
-  }
+
 
   var urlState = readUrlState();
   var savedVp = urlState.vp || localStorage.getItem('sg-vp');
@@ -321,8 +331,5 @@
     });
   }
 
-  if (!localStorage.getItem('sg-hints-seen')) {
-    localStorage.setItem('sg-hints-seen', '1');
-    setTimeout(showShortcutHint, 800);
-  }
+
 })();

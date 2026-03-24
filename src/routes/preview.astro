@@ -89,16 +89,6 @@ const propsJson = JSON.stringify(preview.props || {});
     }
 
 
-    #sg-shortcut-hint {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: rgba(8,8,26,0.9); border: 1px solid rgba(221,241,96,0.3);
-      color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 0.1em;
-      padding: 8px 16px; border-radius: 3px; pointer-events: none;
-      opacity: 0; transition: opacity 0.4s; white-space: nowrap; z-index: 9998;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    #sg-shortcut-hint span { color: #DDF160; }
-
     .sg-builtin-warn {
       position: fixed; top: var(--sg-nav-height, 52px); left: 0; right: 0;
       z-index: 990; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -163,10 +153,6 @@ const propsJson = JSON.stringify(preview.props || {});
     <iframe id="sg-frame" src={embedBase}></iframe>
   </div>
 
-  <div id="sg-shortcut-hint">
-    <span>F</span> full &nbsp; <span>D/L</span> theme &nbsp; <span>1-4</span> zoom* &nbsp; <span>R</span> reload &nbsp; <span>C</span> copy props &nbsp; <span>←/→</span> navigate
-  </div>
-
   <script is:inline define:vars={{ themeConfig, propsJson, compNavLinks, slug, embedBase }}>
     window.__stargazerDarkMode = themeConfig;
     window.__stargazerProps = JSON.parse(propsJson);
@@ -189,6 +175,6 @@ const propsJson = JSON.stringify(preview.props || {});
       } catch { }
     })();
   </script>
-  <script is:inline src="/__stargazer_controls.js?v=2"></script>
+  <script is:inline src="/__stargazer_controls.js?v=3"></script>
 </body>
 </html>

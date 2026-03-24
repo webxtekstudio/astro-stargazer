@@ -143,7 +143,7 @@ const {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: min(500px, 40vw);
   }
 
   .sg-nav-cat-link {
@@ -409,6 +409,74 @@ const {
   .sg-nav-anim {
     animation: sgNavFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  #sg-shortcut-trigger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    z-index: 99998;
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
+  #sg-shortcut-hint {
+    background: rgba(8, 8, 26, 0.88);
+    border: 1px solid rgba(221, 241, 96, 0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    padding: 7px 18px;
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    white-space: nowrap;
+    font-family: "JetBrains Mono", monospace;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #sg-shortcut-trigger:hover #sg-shortcut-hint {
+    opacity: 1;
+  }
+  html[data-theme="light"] #sg-shortcut-hint {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(138, 150, 0, 0.2);
+    color: rgba(0, 0, 0, 0.45);
+  }
+  #sg-shortcut-hint .sg-k {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(221, 241, 96, 0.1);
+    border: 1px solid rgba(221, 241, 96, 0.25);
+    color: #ddf160;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    min-width: 18px;
+  }
+  html[data-theme="light"] #sg-shortcut-hint .sg-k {
+    background: rgba(138, 150, 0, 0.1);
+    border-color: rgba(138, 150, 0, 0.25);
+    color: #8a9600;
+  }
+  #sg-shortcut-hint .sg-k-sep {
+    width: 1px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  html[data-theme="light"] #sg-shortcut-hint .sg-k-sep {
+    background: rgba(0, 0, 0, 0.1);
+  }
 </style>
 
 <nav class="sg-nav">
@@ -578,6 +646,24 @@ const {
     }
   </div>
 </nav>
+
+<div id="sg-shortcut-trigger">
+  <div id="sg-shortcut-hint">
+    <span class="sg-k">F</span> Full
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">1</span><span class="sg-k">2</span><span class="sg-k">3</span><span class="sg-k">4</span><span class="sg-k">5</span> Viewport
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">+</span><span class="sg-k">-</span> Zoom
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">D</span><span class="sg-k">L</span> Theme
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">R</span> Reload
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">C</span> Props
+    <span class="sg-k-sep"></span>
+    <span class="sg-k">←</span><span class="sg-k">→</span> Navigate
+  </div>
+</div>
 
 <script is:inline>
   (function () {
