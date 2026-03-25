@@ -776,20 +776,86 @@ const basePath: string = data.config?.base || "/stargazer";
         margin: 48px 0;
       }
 
+      /* ── Sidebar backdrop ── */
+      .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 89;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+      }
+      .sidebar-backdrop.visible {
+        display: block;
+        opacity: 1;
+      }
+
       @media (max-width: 768px) {
         .sidebar-toggle {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          flex-shrink: 0;
         }
+
+        /* Hide non-essential header items */
+        .docs-header .docs-search-wrap,
+        .docs-header .docs-header-title,
+        .docs-header .header-sep {
+          display: none;
+        }
+        .docs-header {
+          padding: 0 12px;
+          gap: 8px;
+        }
+        .sg-btn-group {
+          margin-left: auto;
+        }
+
+        /* Sidebar drawer */
         .docs-sidebar {
+          width: min(280px, 80vw);
           transform: translateX(-100%);
-          transition: transform 0.25s ease;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.3s ease;
+          z-index: 90;
+          box-shadow: none;
         }
         .docs-sidebar.open {
           transform: translateX(0);
+          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
         }
+
+        /* Content takes full width */
         .docs-content {
           margin-left: 0;
-          padding: 28px 20px 60px;
+          max-width: 100%;
+          padding: 28px 16px 60px;
+        }
+
+        /* Code blocks responsive */
+        .docs-pre-wrapper {
+          width: 100% !important;
+          min-width: unset !important;
+          resize: none !important;
+        }
+
+        /* Tables responsive */
+        .docs-content .table-scroll {
+          margin-left: -16px;
+          margin-right: -16px;
+          padding: 0 16px;
+        }
+
+        /* Body scroll lock when sidebar open */
+        body.sidebar-open {
+          overflow: hidden;
         }
       }
 
@@ -932,6 +998,7 @@ const basePath: string = data.config?.base || "/stargazer";
       <div class="sidebar-section-title">Help</div>
       <a class="sidebar-link" href="#troubleshooting">Troubleshooting</a>
     </nav>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <main class="docs-content">
       <h1 style="display:flex;align-items:center;gap:10px;">
@@ -2456,17 +2523,42 @@ import Badge from './Badge.svelte';   // Svelte
 
       const toggle = document.getElementById("sidebar-toggle");
       const sidebar = document.getElementById("docs-sidebar");
+      const backdrop = document.getElementById("sidebar-backdrop");
+
+      function openSidebar() {
+        if (!sidebar || !backdrop || !toggle) return;
+        sidebar.classList.add("open");
+        backdrop.classList.add("visible");
+        document.body.classList.add("sidebar-open");
+        toggle.textContent = "✕";
+      }
+      function closeSidebar() {
+        if (!sidebar || !backdrop || !toggle) return;
+        sidebar.classList.remove("open");
+        backdrop.classList.remove("visible");
+        document.body.classList.remove("sidebar-open");
+        toggle.textContent = "☰";
+      }
+
       if (toggle && sidebar) {
-        toggle.addEventListener("click", () =>
-          sidebar.classList.toggle("open"),
-        );
+        toggle.addEventListener("click", () => {
+          sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+        });
         sidebar.addEventListener("click", (e: Event) => {
           const target = e.target as HTMLElement;
           if (target.classList.contains("sidebar-link")) {
-            sidebar.classList.remove("open");
+            closeSidebar();
           }
         });
       }
+      if (backdrop) {
+        backdrop.addEventListener("click", closeSidebar);
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && sidebar?.classList.contains("open")) {
+          closeSidebar();
+        }
+      });
 
       const searchInput = document.getElementById(
         "docs-search",
