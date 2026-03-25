@@ -7,6 +7,8 @@ Preview every `.astro` component you've ever built — isolated, with viewport s
 ![Version](https://img.shields.io/badge/astro-%3E%3D4.9.0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+![Stargazer Demo](https://raw.githubusercontent.com/webxtekagency/astro-stargazer/main/assets/demo.gif)
+
 ---
 
 ## Quick Start
