@@ -1,6 +1,6 @@
 {
   "name": "astro-stargazer",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Preview your Astro components in isolation with viewport simulation, zoom controls and dark mode toggle. Zero-config, dev-only, lightweight.",
   "type": "module",
   "main": "./dist/integration.js",
