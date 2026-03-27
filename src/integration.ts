@@ -343,3 +343,38 @@ export default function stargazer(
     };
 }
 export type { StargazerConfig, StargazerComponent, StargazerVariant, DarkModeConfig } from './types.js';
+
+/** Default base path for the Stargazer UI. */
+export const STARGAZER_DEFAULT_BASE = '/stargazer';
+
+/**
+ * Returns `true` if `pathname` belongs to the Stargazer component browser.
+ *
+ * Use this in your Astro middleware to bypass i18n redirects or maintenance
+ * mode for Stargazer routes — so the integration keeps working when your
+ * middleware rewrites URLs that lack a language prefix.
+ *
+ * @param pathname  - `context.url.pathname` from your middleware
+ * @param base      - Your configured `base` option (default: `'/stargazer'`)
+ *
+ * @example
+ * ```ts
+ * // src/middleware.ts
+ * import { defineMiddleware } from 'astro:middleware';
+ * import { isStargazerPath } from 'astro-stargazer';
+ *
+ * export const onRequest = defineMiddleware(async (context, next) => {
+ *   if (isStargazerPath(context.url.pathname)) return next();
+ *   // ... your i18n / maintenance redirect logic
+ * });
+ * ```
+ */
+export function isStargazerPath(pathname: string, base: string = STARGAZER_DEFAULT_BASE): boolean {
+    const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return (
+        pathname === normalizedBase ||
+        pathname.startsWith(normalizedBase + '/') ||
+        pathname.startsWith('/__stargazer') ||
+        pathname === '/__stargazer_controls.js'
+    );
+}
