@@ -1,10 +1,49 @@
 ---
 export const prerender = false;
 
+import Nav from './_Nav.astro';
 import { DOCS_URL } from '../config';
 
-// Redirect immediately to the official docs website.
-// An iframe does not work cross-origin (X-Frame-Options: SAMEORIGIN),
-// so this is the correct, universally compatible approach.
-return Astro.redirect(DOCS_URL, 302);
+const configRes = await fetch(new URL('/__stargazer/registry.json', Astro.url));
+const data = await configRes.json();
+const basePath: string = data.config?.base || '/stargazer';
+const navLinksConfig = Array.isArray(data.config?.navLinks) ? data.config.navLinks : [];
 ---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Stargazer — Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'><path d='M12 3C12 7.97056 16.0294 12 21 12C16.0294 12 12 16.0294 12 21C12 16.0294 7.97056 12 3 12C5.6655 12 8.06036 10.8412 9.70832 9' stroke='%23DDF160' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    #docs-frame {
+      position: fixed;
+      top: var(--sg-nav-height, 52px);
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: calc(100vh - var(--sg-nav-height, 52px));
+      border: none;
+      display: block;
+      background: #08081a;
+    }
+  </style>
+</head>
+<body class="__sg-page">
+  <Nav basePath={basePath} title="Documentation" navLinks={navLinksConfig} themeEnabled={false} />
+
+  <iframe
+    id="docs-frame"
+    src={DOCS_URL}
+    title="Stargazer Documentation"
+    loading="eager"
+    allow="clipboard-write"
+  ></iframe>
+</body>
+</html>

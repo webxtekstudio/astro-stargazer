@@ -12,6 +12,7 @@ interface Props {
   catLabel?: string;
   navLinks?: NavLink[];
   themeEnabled?: boolean;
+  showShortcuts?: boolean;
 }
 const {
   basePath,
@@ -20,6 +21,7 @@ const {
   catLabel,
   navLinks = [],
   themeEnabled = false,
+  showShortcuts = false,
 } = Astro.props;
 ---
 
@@ -647,6 +649,7 @@ const {
   </div>
 </nav>
 
+{showShortcuts && (
 <div id="sg-shortcut-trigger">
   <div id="sg-shortcut-hint">
     <span class="sg-k">F</span> Full
@@ -664,6 +667,7 @@ const {
     <span class="sg-k">←</span><span class="sg-k">→</span> Navigate
   </div>
 </div>
+)}
 
 <script is:inline>
   (function () {

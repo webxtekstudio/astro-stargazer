@@ -17,7 +17,7 @@ function layoutFileName(
     const path = layoutsMap[key];
     return path.split("/").pop() || path;
 }
-import { WEBXTEK_URL, DOCS_URL } from '../config';
+import { WEBXTEK_URL } from '../config';
 const registryUrl = new URL("/__stargazer/registry.json", Astro.url.origin);
 const res = await fetch(registryUrl.href);
 const data = await res.json();
@@ -1573,9 +1573,7 @@ const componentsJson = JSON.stringify(
                             >⚙ Settings</button
                         >
                         <a
-                            href={DOCS_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`${basePath}/documentation`}
                             class="sg-global-btn sg-anim-status"
                             style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"
                             title="Stargazer Documentation"
