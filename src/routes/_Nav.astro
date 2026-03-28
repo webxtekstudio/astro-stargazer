@@ -13,6 +13,7 @@ interface Props {
   navLinks?: NavLink[];
   themeEnabled?: boolean;
   showShortcuts?: boolean;
+  componentPath?: string;
 }
 const {
   basePath,
@@ -22,7 +23,10 @@ const {
   navLinks = [],
   themeEnabled = false,
   showShortcuts = false,
+  componentPath,
 } = Astro.props;
+
+const copyFilename = componentPath ? componentPath.split('/').pop() || componentPath : undefined;
 ---
 
 <style is:global>
@@ -146,6 +150,41 @@ const {
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: min(500px, 40vw);
+  }
+
+  .sg-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--sg-nav-text-muted);
+    font-size: 10px;
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.08em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .sg-copy-btn:hover {
+    color: var(--sg-nav-accent);
+    background: var(--sg-btn-hover-bg);
+  }
+  .sg-copy-btn.sg-copied {
+    color: var(--sg-nav-accent);
+  }
+  .sg-copy-btn .sg-copy-icon {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    display: block;
+  }
+  .sg-copy-btn .sg-copy-icon path {
+    stroke: currentColor;
+    fill: none;
   }
 
   .sg-nav-cat-link {
@@ -525,6 +564,20 @@ const {
       <span class="sg-nav-title">{title}</span>
     )
   }
+  {copyFilename && (
+    <button
+      id="sg-copy-btn"
+      class="sg-copy-btn"
+      data-copy={copyFilename}
+      title={`Copy: ${copyFilename}`}
+      onclick="sgCopyComp(this)"
+    >
+      <svg class="sg-copy-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path id="sg-copy-icon-path" d="M8 4H6C4.89543 4 4 4.89543 4 6V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V6C20 4.89543 19.1046 4 18 4H16M8 4C8 5.10457 8.89543 6 10 6H14C15.1046 6 16 5.10457 16 4M8 4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="sg-copy-label">COPY</span>
+    </button>
+  )}
   <slot />
   <div class="sg-nav-trailing">
     {
@@ -692,4 +745,24 @@ const {
       }
     }
   })();
+
+  function sgCopyComp(btn) {
+    var text = btn.getAttribute('data-copy');
+    if (!text) return;
+    var label = btn.querySelector('.sg-copy-label');
+    var iconPath = btn.querySelector('#sg-copy-icon-path');
+    navigator.clipboard.writeText(text).then(function() {
+      btn.classList.add('sg-copied');
+      if (label) label.textContent = 'COPIED!';
+      if (iconPath) iconPath.setAttribute('d', 'M20 6L9 17L4 12');
+      setTimeout(function() {
+        btn.classList.remove('sg-copied');
+        if (label) label.textContent = 'COPY';
+        if (iconPath) iconPath.setAttribute('d', 'M8 4H6C4.89543 4 4 4.89543 4 6V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V6C20 4.89543 19.1046 4 18 4H16M8 4C8 5.10457 8.89543 6 10 6H14C15.1046 6 16 5.10457 16 4M8 4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4');
+      }, 2000);
+    }).catch(function() {
+      if (label) label.textContent = 'ERROR';
+      setTimeout(function() { if (label) label.textContent = 'COPY'; }, 2000);
+    });
+  }
 </script>

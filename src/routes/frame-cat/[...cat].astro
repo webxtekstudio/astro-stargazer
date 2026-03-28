@@ -11,7 +11,7 @@ if (overridePropsRaw) {
   try { overrideProps = JSON.parse(decodeURIComponent(overridePropsRaw)); } catch { }
 }
 
-let catComps: Array<{ slug: string; name: string }> = [];
+let catComps: Array<{ slug: string; name: string; path?: string }> = [];
 try {
   const res = await fetch(`${origin}/__stargazer/render-category-meta/${encodeURIComponent(catParam)}`);
   if (res.ok) catComps = await res.json();
@@ -28,7 +28,7 @@ try {
   }
 } catch { }
 
-const componentItems: Array<{ slug: string; name: string; Component: any; props: any }> = [];
+const componentItems: Array<{ slug: string; name: string; filename: string; Component: any; props: any }> = [];
 let Layout: any = null;
 let cssLinks: string[] = [];
 
@@ -52,7 +52,8 @@ for (const comp of catComps) {
 
     const Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
     const props = { ...(previewData.props || {}), ...overrideProps };
-    componentItems.push({ slug: comp.slug, name: comp.name, Component, props });
+    const filename = comp.path ? comp.path.split('/').pop() || comp.name : comp.name;
+    componentItems.push({ slug: comp.slug, name: comp.name, filename, Component, props });
   } catch { }
 }
 
@@ -63,11 +64,14 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
   <Layout>
     {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
 
-    {componentItems.map(({ slug, name, Component, props }, i) => (
+    {componentItems.map(({ slug, name, filename, Component, props }, i) => (
       <div class="sg-section" data-slug={slug}>
         <div class="sg-label">
           <span class="sg-label__dot"></span>
           {name}
+          <button class="sg-label__copy" data-copy={filename} onclick="sgCatCopy(this)" title={`Copy: ${filename}`}>
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 4H6C4.89543 4 4 4.89543 4 6V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V6C20 4.89543 19.1046 4 18 4H16M8 4C8 5.10457 8.89543 6 10 6H14C15.1046 6 16 5.10457 16 4M8 4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
         <Component {...props} />
         {i < componentItems.length - 1 && <div class="sg-divider" />}
@@ -78,6 +82,21 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
       window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
+    <script is:inline>
+      function sgCatCopy(btn) {
+        var text = btn.getAttribute('data-copy');
+        if (!text) return;
+        var path = btn.querySelector('path');
+        navigator.clipboard.writeText(text).then(function() {
+          btn.classList.add('sg-cat-copied');
+          if (path) path.setAttribute('d', 'M20 6L9 17L4 12');
+          setTimeout(function() {
+            btn.classList.remove('sg-cat-copied');
+            if (path) path.setAttribute('d', 'M8 4H6C4.89543 4 4 4.89543 4 6V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V6C20 4.89543 19.1046 4 18 4H16M8 4C8 5.10457 8.89543 6 10 6H14C15.1046 6 16 5.10457 16 4M8 4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4');
+          }, 2000);
+        });
+      }
+    </script>
     <script>
       function sgReportHeight() {
         var h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
@@ -146,9 +165,29 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
     text-transform: uppercase;
     border-right: 1px solid var(--sg-label-border-right);
     border-bottom: 1px solid var(--sg-label-border-bottom);
-    pointer-events: none;
     user-select: none;
   }
+
+  .sg-label__copy {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(221, 241, 96, 0.12);
+    cursor: pointer;
+    color: rgba(221, 241, 96, 0.25);
+    padding: 2px 4px 2px 10px;
+    border-radius: 0;
+    transition: color 0.2s;
+    margin-left: 6px;
+  }
+  .sg-label__copy:hover {
+    color: rgba(221, 241, 96, 0.9);
+  }
+  .sg-label__copy.sg-cat-copied { color: rgba(221, 241, 96, 0.9); }
+  .sg-label__copy svg { width: 13px; height: 13px; display: block; flex-shrink: 0; }
+  .sg-label__copy svg path { stroke: currentColor; fill: none; }
 
   .sg-label__dot {
     width: 7px;
