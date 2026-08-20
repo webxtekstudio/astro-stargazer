@@ -49,6 +49,12 @@ for (const comp of catComps) {
     for (const url of (pathsData.cssLinks || [])) {
       if (!cssLinks.includes(url)) cssLinks.push(url);
     }
+    for (const url of (pathsData.scriptLinks || [])) {
+      if (!scriptLinks.includes(url)) scriptLinks.push(url);
+    }
+    for (const css of (pathsData.inlineStyles || [])) {
+      if (!inlineStyles.includes(css)) inlineStyles.push(css);
+    }
 
     const Component = (await import(/* @vite-ignore */ pathsData.compFsUrl)).default;
     const props = { ...(previewData.props || {}), ...overrideProps };
@@ -62,7 +68,15 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
 
 {Layout ? (
   <Layout>
-    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <script type="module" src="/@vite/client"></script>
+    {inlineStyles.map(css => <style is:inline set:html={css} />)}
+    {cssLinks.map(url => (
+      url.includes('?astro&type=style') ? (
+        <script type="module" src={url}></script>
+      ) : (
+        <link rel="stylesheet" href={url} />
+      )
+    ))}
 
     {componentItems.map(({ slug, name, filename, Component, props }, i) => (
       <div class="sg-section" data-slug={slug}>
@@ -74,7 +88,7 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
           </button>
         </div>
         <Component {...props} />
-        {i < componentItems.length - 1 && <div class="sg-divider" />}
+        {i < componentItems.length - 1 && <div class="sg-divider"></div>}
       </div>
     ))}
 
@@ -82,6 +96,7 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
       window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
+    {scriptLinks.map(url => <script type="module" src={url}></script>)}
     <script is:inline>
       function sgCatCopy(btn) {
         var text = btn.getAttribute('data-copy');
@@ -100,7 +115,7 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
     <script>
       function sgReportHeight() {
         var h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-        parent.postMessage({ type: 'sg-resize', height: h }, '*');
+        if (h > 50) parent.postMessage({ type: 'sg-resize', height: h }, '*');
       }
       window.addEventListener('load', function() {
         sgReportHeight();
@@ -111,13 +126,22 @@ const darkModeConfigStr = JSON.stringify(darkModeConfig);
   </Layout>
 ) : (
   <>
-    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <script type="module" src="/@vite/client"></script>
+    {inlineStyles.map(css => <style is:inline set:html={css} />)}
+    {cssLinks.map(url => (
+      url.includes('?astro&type=style') ? (
+        <script type="module" src={url}></script>
+      ) : (
+        <link rel="stylesheet" href={url} />
+      )
+    ))}
     {componentItems.map(({ slug, name, Component, props }) => (
       <div class="sg-section" data-slug={slug}>
         <div class="sg-label">{name}</div>
         <Component {...props} />
       </div>
     ))}
+    {scriptLinks.map(url => <script type="module" src={url}></script>)}
   </>
 )}
 

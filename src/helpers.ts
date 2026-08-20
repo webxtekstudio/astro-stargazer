@@ -28,6 +28,8 @@ export function isStargazerPath(pathname: string, base = STARGAZER_DEFAULT_BASE)
   return (
     pathname === b ||
     pathname.startsWith(b + '/') ||
-    pathname.startsWith('/_stargazer')
+    pathname.startsWith('/__stargazer') ||
+    pathname.startsWith('/_stargazer') ||
+    pathname === '/__stargazer_controls.js'
   );
 }

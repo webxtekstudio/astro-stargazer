@@ -8,24 +8,6 @@ let pathsData: any = null;
 let previewData: any = null;
 let darkModeConfig: any = {};
 
-try {
-  const [pathsRes, previewRes] = await Promise.all([
-    fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}`),
-    fetch(`${origin}/__stargazer/preview/${encodeURIComponent(slug!)}`),
-  ]);
-  if (pathsRes.ok) {
-    pathsData = await pathsRes.json();
-    if (pathsData.darkMode && typeof pathsData.darkMode === 'object') {
-      darkModeConfig = pathsData.darkMode;
-    }
-  }
-  if (previewRes.ok) previewData = await previewRes.json();
-} catch { }
-
-if (!pathsData || pathsData.error || !previewData || previewData.error) {
-  return Astro.redirect('/stargazer');
-}
-
 const urlObj = Astro.url;
 const overrideLayout = urlObj.searchParams.get('overrideLayout') || '';
 const overridePropsRaw = urlObj.searchParams.get('overrideProps') || '';
@@ -34,16 +16,38 @@ if (overridePropsRaw) {
   try { overrideProps = JSON.parse(decodeURIComponent(overridePropsRaw)); } catch { }
 }
 
-if (overrideLayout) {
+const runtime = (globalThis as any).__STARGAZER_RUNTIME__;
+if (runtime) {
+  previewData = runtime.getPreviewData(slug);
+  pathsData = await runtime.getPathsData(slug, overrideLayout);
+  if (pathsData?.darkMode && typeof pathsData.darkMode === 'object') {
+    darkModeConfig = pathsData.darkMode;
+  }
+} else {
   try {
-    const overrideRes = await fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}?overrideLayout=${encodeURIComponent(overrideLayout)}`);
-    if (overrideRes.ok) pathsData = await overrideRes.json();
+    const [pathsRes, previewRes] = await Promise.all([
+      fetch(`${origin}/__stargazer/paths/${encodeURIComponent(slug!)}${overrideLayout ? `?overrideLayout=${encodeURIComponent(overrideLayout)}` : ''}`),
+      fetch(`${origin}/__stargazer/preview/${encodeURIComponent(slug!)}`),
+    ]);
+    if (pathsRes.ok) {
+      pathsData = await pathsRes.json();
+      if (pathsData.darkMode && typeof pathsData.darkMode === 'object') {
+        darkModeConfig = pathsData.darkMode;
+      }
+    }
+    if (previewRes.ok) previewData = await previewRes.json();
   } catch { }
+}
+
+if (!pathsData || pathsData.error || !previewData || previewData.error) {
+  return Astro.redirect('/stargazer');
 }
 
 const props = { ...(previewData.props || {}), ...overrideProps };
 
 const cssLinks: string[] = pathsData.cssLinks || [];
+const scriptLinks: string[] = pathsData.scriptLinks || [];
+const inlineStyles: string[] = pathsData.inlineStyles || [];
 const darkModeConfigStr = JSON.stringify(darkModeConfig);
 
 let Component: any = null;
@@ -73,21 +77,39 @@ if (!loadError && pathsData.layoutFsUrl) {
   </div>
 ) : Layout && Component ? (
   <Layout {...props}>
-    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <script type="module" src="/@vite/client"></script>
+    {inlineStyles.map(css => <style is:inline set:html={css} />)}
+    {cssLinks.map(url => (
+      url.includes('?astro&type=style') ? (
+        <script type="module" src={url}></script>
+      ) : (
+        <link rel="stylesheet" href={url} />
+      )
+    ))}
     <Component {...props} />
     <script is:inline define:vars={{ darkModeConfigStr }}>
       window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
+    {scriptLinks.map(url => <script type="module" src={url}></script>)}
   </Layout>
 ) : Component ? (
   <>
-    {cssLinks.map(url => <link rel="stylesheet" href={url} />)}
+    <script type="module" src="/@vite/client"></script>
+    {inlineStyles.map(css => <style is:inline set:html={css} />)}
+    {cssLinks.map(url => (
+      url.includes('?astro&type=style') ? (
+        <script type="module" src={url}></script>
+      ) : (
+        <link rel="stylesheet" href={url} />
+      )
+    ))}
     <Component {...props} />
     <script is:inline define:vars={{ darkModeConfigStr }}>
       window.__stargazerDarkMode = JSON.parse(darkModeConfigStr);
     </script>
     <script is:inline src="/__stargazer_controls.js"></script>
+    {scriptLinks.map(url => <script type="module" src={url}></script>)}
   </>
 ) : null}
 

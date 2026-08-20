@@ -4,13 +4,25 @@ export const prerender = false;
 import Nav from './_Nav.astro';
 
 const { slug } = Astro.params;
+const origin = Astro.url.origin;
 
-const previewUrl = new URL(`/__stargazer/preview/${slug}`, Astro.url.origin);
 let preview: any = null;
-try {
-  const res = await fetch(previewUrl.href);
-  if (res.ok) preview = await res.json();
-} catch { }
+let regData: any = null;
+
+const runtime = (globalThis as any).__STARGAZER_RUNTIME__;
+if (runtime) {
+  preview = runtime.getPreviewData(slug);
+  const config = runtime.getConfig();
+  const components = runtime.getResolvedComponents();
+  regData = { config, components };
+} else {
+  try {
+    const res = await fetch(new URL(`/__stargazer/preview/${slug}`, origin).href);
+    if (res.ok) preview = await res.json();
+    const regRes = await fetch(new URL('/__stargazer/registry.json', origin).href);
+    if (regRes.ok) regData = await regRes.json();
+  } catch { }
+}
 
 if (!preview || preview.error) {
   return Astro.redirect('/stargazer');
@@ -23,24 +35,20 @@ let basePath = '/stargazer';
 let navLinksConfig: any[] = [];
 let usingBuiltinLayout = false;
 
-try {
-  const regRes = await fetch(new URL('/__stargazer/registry.json', Astro.url.origin).href);
-  if (regRes.ok) {
-    const regData = await regRes.json();
-    basePath = regData.config?.base || '/stargazer';
-    usingBuiltinLayout = regData.config?.defaultLayout === '__sg_default';
-    if (regData.config?.darkMode === false) {
-      themeEnabled = false;
-    } else if (regData.config?.darkMode && typeof regData.config.darkMode === 'object') {
-      themeConfig = regData.config.darkMode;
-    }
-    compNavLinks = (regData.components || []).map((c: any) => `${basePath}/${c.slug}`);
-    navLinksConfig = Array.isArray(regData.config?.navLinks) ? regData.config.navLinks : [];
-    navLinksConfig = navLinksConfig.map((link: any) =>
-      link.highlight ? { ...link, label: 'BACK', href: basePath } : link
-    );
+if (regData) {
+  basePath = regData.config?.base || '/stargazer';
+  usingBuiltinLayout = regData.config?.defaultLayout === '__sg_default';
+  if (regData.config?.darkMode === false) {
+    themeEnabled = false;
+  } else if (regData.config?.darkMode && typeof regData.config.darkMode === 'object') {
+    themeConfig = regData.config.darkMode;
   }
-} catch { }
+  compNavLinks = (regData.components || []).map((c: any) => `${basePath}/${c.slug}`);
+  navLinksConfig = Array.isArray(regData.config?.navLinks) ? regData.config.navLinks : [];
+  navLinksConfig = navLinksConfig.map((link: any) =>
+    link.highlight ? { ...link, label: 'BACK', href: basePath } : link
+  );
+}
 
 const docsLink = `${basePath}/documentation`;
 const embedBase = `${basePath}/frame/${slug}`;

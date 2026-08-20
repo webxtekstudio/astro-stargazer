@@ -2,9 +2,12 @@ import type {
   StargazerConfig,
   StargazerComponent,
   ResolvedComponent,
+  StargazerVariant,
 } from './types.js';
-import { readdirSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join, relative, extname, basename } from 'node:path';
+import { discoverCallSites, createVariantsFromUsages } from './inference/callsite.js';
+import { inferStructuralProps } from './inference/fuzzer.js';
 
 function slugify(str: string): string {
   return str
@@ -62,9 +65,27 @@ function autoScanComponents(
   config: StargazerConfig,
   root: string
 ): StargazerComponent[] {
-  const rawScanDir = config.scanDir || 'src';
+  let rawScanDir = config.scanDir;
+  if (!rawScanDir) {
+    if (existsSync(join(root, 'src', 'components'))) {
+      rawScanDir = 'src/components';
+    } else {
+      rawScanDir = 'src';
+    }
+  }
   const scanDir = join(root, rawScanDir.replace(/^\.?\//, ''));
-  const defaultExcludes = ['src/layouts', 'src/pages', 'src/styles'];
+  const defaultExcludes = [
+    'src/layouts',
+    'src/pages',
+    'src/templates',
+    'src/styles',
+    'src/css',
+    'src/assets',
+    'src/content',
+    'src/i18n',
+    'src/middleware',
+    'src/routes',
+  ];
   const userExcludes = config.exclude || [];
   const excludedPaths = [...defaultExcludes, ...userExcludes];
   const files = findAstroFiles(scanDir, excludedPaths, root);
@@ -93,13 +114,28 @@ function resolveLayoutKey(
 
 function resolveComponent(
   entry: StargazerComponent,
-  config: StargazerConfig
+  config: StargazerConfig,
+  callsiteMap?: Map<string, Array<{ pagePath: string; pageName: string; props: Record<string, unknown> }>>,
+  projectRoot?: string
 ): ResolvedComponent[] {
   const results: ResolvedComponent[] = [];
   const layoutKey = entry.layout ?? resolveLayoutKey(entry.path, config);
   const layoutPath = layoutKey && config.layouts ? config.layouts[layoutKey] : undefined;
   const category = entry.category || categoryFromPath(entry.path);
 
+  // Layer 3: Structural Type-Safe Fallbacks (Anti-Crash)
+  let structuralProps: Record<string, unknown> = {};
+  if (config.inferProps !== false && projectRoot && entry.path) {
+    try {
+      const absPath = join(projectRoot, entry.path.replace(/^\.\//, ''));
+      if (existsSync(absPath)) {
+        const src = readFileSync(absPath, 'utf-8');
+        structuralProps = inferStructuralProps(src);
+      }
+    } catch { }
+  }
+
+  // Layer 1: Manual Variants (Explicitly declared in config)
   if (entry.variants && entry.variants.length > 0) {
     for (const variant of entry.variants) {
       results.push({
@@ -109,23 +145,30 @@ function resolveComponent(
         componentPath: entry.path,
         layoutPath,
         layoutKey,
-        props: mergeProps(config.defaults, entry.props, variant.props),
+        props: mergeProps(structuralProps, config.defaults, entry.props, variant.props),
         category,
         variantName: variant.name,
       });
     }
-  } else {
-    results.push({
-      slug: slugify(entry.name),
-      name: entry.name,
-      description: entry.description,
-      componentPath: entry.path,
-      layoutPath,
-      layoutKey,
-      props: mergeProps(config.defaults, entry.props),
-      category,
-    });
+    return results;
   }
+
+  // Layer 2: Call-Site Usages Discovered in Pages
+  const normKey = entry.path.replace(/^\.\//, '').replace(/\\/g, '/');
+  const usages = (config.inferUsages !== false && callsiteMap) ? (callsiteMap.get(normKey) || []) : [];
+  const singleUsageProps = usages.length >= 1 ? usages[0].props : undefined;
+
+  // Single clean entry per component
+  results.push({
+    slug: slugify(entry.name),
+    name: entry.name,
+    description: entry.description,
+    componentPath: entry.path,
+    layoutPath,
+    layoutKey,
+    props: mergeProps(structuralProps, config.defaults, singleUsageProps, entry.props),
+    category,
+  });
 
   return results;
 }
@@ -134,26 +177,71 @@ export function scanComponents(
   config: StargazerConfig,
   root?: string
 ): ResolvedComponent[] {
+  // Auto-discover layouts if not already populated
+  if (root && (!config.layouts || Object.keys(config.layouts).length === 0)) {
+    config.layouts = config.layouts || {};
+    const layoutsDir = join(root, 'src', 'layouts');
+    if (existsSync(layoutsDir)) {
+      try {
+        for (const file of readdirSync(layoutsDir)) {
+          if (file.endsWith('.astro')) {
+            const name = file.replace('.astro', '');
+            config.layouts[name] = `/src/layouts/${file}`;
+          }
+        }
+        if (!config.defaultLayout && Object.keys(config.layouts).length === 1) {
+          config.defaultLayout = Object.keys(config.layouts)[0];
+        }
+      } catch { }
+    }
+  }
+
   let components: StargazerComponent[] = [];
 
+  // Discover real call-sites across pages if enabled
+  let callsiteMap: Map<string, Array<{ pagePath: string; pageName: string; props: Record<string, unknown> }>> | undefined;
+  if (config.inferUsages !== false && root) {
+    try {
+      callsiteMap = discoverCallSites(root) as any;
+    } catch { }
+  }
+
   if (config.mode === 'auto' && root) {
-    components = autoScanComponents(config, root);
+    // In auto mode: start with auto-scanned components, then merge any manual overrides
+    const scanned = autoScanComponents(config, root);
+    const manualOverrides = new Map((config.components || []).map(c => [c.path.replace(/^\.\//, ''), c]));
+
+    components = scanned.map(scannedComp => {
+      const key = scannedComp.path.replace(/^\.\//, '');
+      const manual = manualOverrides.get(key);
+      if (manual) {
+        manualOverrides.delete(key);
+        return { ...scannedComp, ...manual };
+      }
+      return scannedComp;
+    });
+
+    // Add any manual components that were not picked up by auto-scan
+    for (const manual of manualOverrides.values()) {
+      components.push(manual);
+    }
   } else {
     components = config.components || [];
   }
 
   const resolved: ResolvedComponent[] = [];
   for (const entry of components) {
-    resolved.push(...resolveComponent(entry, config));
+    resolved.push(...resolveComponent(entry, config, callsiteMap, root));
   }
 
   const slugCounts = new Map<string, number>();
   for (const item of resolved) {
-    const count = slugCounts.get(item.slug) || 0;
+    const base = item.slug;
+    const count = slugCounts.get(base) || 0;
     if (count > 0) {
-      item.slug = `${item.slug}-${count}`;
+      item.slug = `${base}-${count}`;
     }
-    slugCounts.set(item.slug, count + 1);
+    slugCounts.set(base, count + 1);
   }
 
   return resolved;

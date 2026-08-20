@@ -1,6 +1,6 @@
 {
   "name": "astro-stargazer",
-  "version": "1.5.45",
+  "version": "1.6.0",
   "description": "Preview your Astro components in isolation with viewport simulation, zoom controls and dark mode toggle. Zero-config, dev-only, lightweight.",
   "type": "module",
   "main": "./dist/integration.js",
@@ -15,17 +15,23 @@
       "types": "./dist/helpers.d.ts",
       "import": "./dist/helpers.js",
       "default": "./dist/helpers.js"
+    },
+    "./middleware": {
+      "types": "./dist/helpers.d.ts",
+      "import": "./dist/helpers.js",
+      "default": "./dist/helpers.js"
     }
   },
   "bin": {
-    "create-stargazer": "./bin/create-stargazer.mjs"
+    "create-stargazer": "bin/create-stargazer.mjs"
   },
   "files": [
     "dist/**/*",
     "src/**/*",
     "bin/**/*",
     "README.md",
-    "DOCUMENTATION.md"
+    "DOCUMENTATION.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup",
@@ -49,17 +55,17 @@
   "homepage": "https://astro-stargazer.pages.dev/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/webxtekstudio/astro-stargazer"
+    "url": "git+https://github.com/webxtekstudio/astro-stargazer.git"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "astro": ">=4.9.0"
+    "astro": ">=4.9.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "astro": "^6.1.5",
+    "astro": "^7.2.3",
     "tsup": "^8.5.1",
     "typescript": "^5.7.0",
     "vitest": "^4.1.1"

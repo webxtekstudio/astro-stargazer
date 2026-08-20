@@ -53,10 +53,19 @@ export interface StargazerConfig {
   components?: StargazerComponent[];
   /** Directory to scan for components (default: `./src`). Only used in `auto` mode. */
   scanDir?: string;
+  /** Automatically discover usages across pages to create real-world preview variants. Default: true. */
+  inferUsages?: boolean;
+  /** Automatically provide type-safe fallback values for required props to prevent .map() crashes. Default: true. */
+  inferProps?: boolean;
   /** URL base path for the Stargazer UI (default: `/stargazer`). */
   base?: string;
   /** Set to `true` to include Stargazer routes in production builds. Default: `false` (dev-only). */
   buildable?: boolean;
+  /**
+   * Global CSS files to include in all previews (e.g. `['/src/styles/global.css']`).
+   * If omitted, Stargazer automatically discovers CSS files in standard folders (`src/css`, `src/styles`, `src`).
+   */
+  globalCss?: string[];
   /** Dark mode integration. Set to `false` to disable. */
   darkMode?: false | DarkModeConfig;
   /**

@@ -11,6 +11,16 @@ Preview every `.astro` component you've ever built — isolated, with viewport s
 
 ---
 
+## ✨ Features in v1.6.0
+
+- 🧠 **Intelligent Type-Driven Inference**: Automatically parses `interface Props`, `type Props`, assertions (`Astro.props as { ... }`), unions, nested objects, and arrays without manual props configuration.
+- 🎨 **Auto-Discovery of Layouts & Global CSS**: Automatically wraps components with your project's `Layout.astro` and loads global stylesheets (`src/css`, `src/styles`).
+- ⚡ **Teleport & Modal Resilience**: Interactive modals, lightboxes, and popups that append to `document.body` work seamlessly without being suppressed.
+- 📱 **Multi-Viewport Simulation & Zoom**: Test components on Mobile (390px), Tablet (780px), Desktop (1024px/1440px/2560px) and Fullscreen with real-time zooming.
+- 🌗 **Canvas Theme & Contrast Toggle**: Switch between Dark and Light canvas backgrounds to inspect component edges, cutouts, and translucent styles.
+
+---
+
 ## Quick Start
 
 ### Option A — `astro add` (recommended)

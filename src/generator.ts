@@ -37,7 +37,17 @@ export function getPreviewData(
   slug: string,
   components: ResolvedComponent[]
 ): PreviewData | null {
-  const comp = components.find((c) => c.slug === slug);
+  const norm = (slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  let comp = components.find((c) => c.slug === slug);
+  if (!comp) {
+    comp = components.find((c) => c.slug.toLowerCase().replace(/[^a-z0-9]/g, '') === norm);
+  }
+  if (!comp) {
+    comp = components.find((c) => c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === norm);
+  }
+  if (!comp) {
+    comp = components.find((c) => c.slug.toLowerCase().replace(/[^a-z0-9]/g, '').startsWith(norm));
+  }
   if (!comp) return null;
   return {
     slug: comp.slug,

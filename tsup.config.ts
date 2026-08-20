@@ -7,6 +7,7 @@ export default defineConfig({
         'src/types.ts',
         'src/scanner.ts',
         'src/generator.ts',
+        'src/wrapper-generator.ts',
     ],
     format: ['esm'],
     dts: true,
